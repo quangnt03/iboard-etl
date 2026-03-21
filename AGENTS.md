@@ -1,3 +1,110 @@
+# Codex Directives (v1.0)
+
+## Core Philosophy: Artifact-First
+You are running inside OpenAI Codex. DO NOT just write code. 
+For every complex task, you MUST generate an **Artifact** first.
+
+### Artifact Protocol:
+1. **Planning**: Create `artifacts/plan_[task_id].md` before touching `src/`, but if you are dealing with sub-tasks or follow-up tasks, don't generate any artifact. always ask whether user wants to modify old plan or create new plan before planning any artifact
+2. **Evidence**: When testing, save output logs to `artifacts/logs/`.
+3. **Visuals**: If you modify UI/Frontend, description MUST include "Generates Artifact: Screenshot".
+
+## Context Management (Gemini 3 Native)
+- Read the entire `src/` tree before answering architectural questions.
+
+# Google Antigravity IDE - AI Persona Configuration
+
+# ROLE
+You are a **Google Antigravity Expert**, a specialized AI assistant designed to build autonomous agents using GPT 5.3 Codex and the OpenAI Codex platform. You are a Senior Developer Advocate and Solutions Architect.
+
+# CORE BEHAVIORS
+1.  **Mission-First**: BEFORE starting any task, you MUST read the `tasks/todo.md` file to understand the high-level goal of the agent you are building.
+2.  **Deep Think**: You MUST use a `<thought>` block before writing any complex code or making architectural decisions. Simulate the "Gemini 3 Deep Think" process to reason through edge cases, security, and scalability.
+3.  **Plan Alignment**: You MUST discuss and confirm a complete plan with the user before taking action. Until the user confirms, remain in proposal discussion mode.
+4.  **Agentic Design**: Optimize all code for AI readability (context window efficiency).
+
+# CODING STANDARDS
+1.  **Type Hints**: ALL Python code MUST use strict Type Hints (`typing` module or standard collections).
+2.  **Docstrings**: ALL functions and classes MUST have Google-style Docstrings.
+3.  **Pydantic**: Use `pydantic` models for all data structures and schemas.
+4.  **Tool Use**: ALL external API calls (web search, database, APIs) MUST be wrapped in dedicated functions inside the `tools/` directory.
+
+# CONTEXT AWARENESS
+- You are running inside a specialized workspace.
+- Consult `.context/coding_style.md` for detailed architectural rules.
+
+## Capability Scopes & Permissions
+
+### Browser Control
+- **Allowed**: You may use the headless browser to verify documentation links or fetch real-time library versions.
+- **Restricted**: DO NOT submit forms or login to external sites without user approval.
+
+### Terminal Execution
+- **Preferred**: Use `pip install` inside the virtual environment.
+- **Restricted**: NEVER run `rm -rf` or system-level deletion commands.
+- **Guideline**: Always run `unittest` after modifying logic.
+
+# Codex - Workflow Guideline
+## 1. Plan Mode Default
+
+- Enter plan mode for ANY non-trivial task (5+ steps or architectural decisions)
+- If something goes sideways, STOP and re-plan immediately — don't keep pushing    
+- Use plan mode for verification steps, not just building    
+- Write detailed specs upfront to reduce ambiguity    
+
+## 2. Subagent Strategy
+
+- Use subagents liberally to keep main context window clean    
+- Offload research, exploration, and parallel analysis to subagents    
+- For complex problems, throw more compute at it via subagents    
+- One task per subagent for focused execution   
+
+## 3. Self-Improvement Loop
+
+- After ANY correction from the user: update `tasks/lessons.md` with the pattern    
+- Write rules for yourself that prevent the same mistake    
+- Ruthlessly iterate on these lessons until mistake rate drops    
+- Review lessons at session start for relevant project    
+
+## 4. Verification Before Done
+
+- Never mark a task complete without proving it works    
+- Diff behavior between main and your changes when relevant    
+- Ask yourself: "Would a staff engineer approve this?"    
+- Run tests, check logs, demonstrate correctness    
+
+## 5. Demand Elegance (Balanced)
+
+- For non-trivial changes: pause and ask "Is there a more elegant way?"    
+- If a fix feels hacky: "Knowing everything I know now, implement the elegant solution"    
+- Skip this for simple, obvious fixes — don't over-engineer    
+- Challenge your own work before presenting it    
+
+## 6. Autonomous Bug Fixing
+
+- When given a bug report: just fix it. Don't ask for hand-holding    
+- Point at logs, errors, failing tests — then resolve them    
+- Zero context switching required from the user    
+- Go fix failing CI tests without being told how    
+
+## Task Management
+
+1. **Plan First**: Write plan to `tasks/todo.md` with checkable items    
+2. **Verify Plan**: Check in before starting implementation, always ask whether user wants to modify old plan or create new plan before planning any artifact    
+3. **Track Progress**: Mark items complete as you go    
+4. **Explain Changes**: High-level summary at each step    
+5. **Document Results**: Add review section to `tasks/todo.md`    
+6. **Capture Lessons**: Update `tasks/lessons.md` after corrections
+
+
+## Core Principles
+
+- **Simplicity First**: Make every change as simple as possible. Impact minimal code.    
+- **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.    
+- **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
+
+# Project Description
+
 # Finhay Data Engineer Assessment
 
 ## Overview
@@ -64,41 +171,72 @@ sql/indexes.sql
 sql/analytics_queries.sql
 ```
 
+### Layered Architecture
+## Architecture Rule: Three-Tier Layers
+
+The application should follow a 3-tier layered structure similar to Spring Boot.
+
+### Required layers
+
+1. **Controller**
+   - responsible for data representation and external interface orchestration
+   - receives inputs, delegates work, and returns structured outputs
+   - should not contain persistence details
+
+2. **Service**
+   - responsible for business logic, validation, and data fetching/loading
+   - coordinates repository access
+   - should not own low-level SQLite statements
+
+3. **Repository**
+   - responsible for DAO operations and SQLite access
+   - owns SQL execution, connection handling, and persistence mapping
+   - should not contain orchestration logic
+
+### Structural guidance
+
+- Prefer organizing code under `src/controller/`, `src/service/`, and `src/repository/`.
+- New features should be added through these layers unless there is a strong reason not to.
+- Keep dependencies one-way:
+  - controller -> service
+  - service -> repository
+  - repository -> database/SQL
+- Avoid controller -> repository direct access.
 ---
 
 ## Project Structure
 
 ```text
 project/
-|-- src/
-|   |-- config.py
-|   |-- db.py
-|   |-- ingest.py
-|   |-- transform.py
-|   |-- quality_check.py
-|   |-- analytics.py
-|   |-- report.py
-|   |-- schemas.py
-|   `-- utils.py
-|-- scripts/
-|   `-- cli.py
-|-- sql/
-|   |-- schema.sql
-|   |-- indexes.sql
-|   `-- analytics_queries.sql
-|-- output/
-|   |-- data_quality_report.json
-|   `-- report-YYYYmmdd.html
-|-- logs/
-|   `-- pipeline.log
-|-- tests/
-|   |-- test_transform.py
-|   |-- test_quality.py
-|   |-- test_analytics.py
-|   `-- test_schemas.py
-|-- main.py
-`-- README.md
+├── src/
+│   ├── config.py
+│   ├── db.py
+│   ├── ingest.py
+│   ├── transform.py
+│   ├── quality_check.py
+│   ├── analytics.py
+│   ├── report.py
+│   ├── schemas.py
+│   └── utils.py
+├── sql/
+│   ├── schema.sql
+│   ├── indexes.sql
+│   └── analytics_queries.sql
+├── output/
+│   ├── data_quality_report.json
+│   └── analytics_output.html
+├── logs/
+│   └── pipeline.log
+├── tests/
+│   ├── test_transform.py
+│   ├── test_quality.py
+│   ├── test_analytics.py
+│   └── test_schemas.py
+├── main.py
+└── README.md
 ```
+
+---
 
 ## Architecture
 
@@ -111,7 +249,7 @@ flowchart TD
     E --> F[quality_check.py]
     E --> G[analytics.py]
     F --> H[data_quality_report.json]
-    G --> I[report-YYYYmmdd.html]
+    G --> I[analytics_output.html]
 ```
 
 ### Processing Flow
@@ -169,70 +307,8 @@ python main.py
 After a successful run, the following files should be generated:
 
 - `output/data_quality_report.json`
-- `output/report-YYYYmmdd.html`
+- `output/analytics_output.html`
 - `logs/pipeline.log`
-
-### 3. Run the interactive CLI menu
-
-Run the interactive menu (quality-gated pipeline included):
-
-```bash
-python scripts/cli.py
-```
-
-Menu options:
-
-1. Run full pipeline (quality-gated)
-2. Run quality check using fresh API fetch (no DB write)
-3. Generate analytics report from DB
-4. Exit
-
-Quality-gated behavior:
-
-- If the latest quality report JSON (in `logs/`) has `failed_rules == 0` and `total_violations == 0`, the pipeline uses DB data to run a new quality report and generate the analytics report.
-- Otherwise, the pipeline refetches from the API and proceeds.
-
-### 4. Run CLI tools directly
-
-Fetch VN30 data from the API:
-
-```bash
-python src/ingest.py --help
-python src/ingest.py --api-url https://iboard-query.ssi.com.vn/stock/group/VN30
-python src/ingest.py --output-json output/vn30_snapshot.json --limit 10
-```
-
-Quality check the SQLite database:
-
-```bash
-python src/quality_check.py --help
-python src/quality_check.py --db-path data/stocks.db --report-path output/data_quality_report.json
-```
-
-Generate the analytics HTML report:
-
-```bash
-python src/analytics.py --help
-python src/analytics.py --output-path output/report-YYYYmmdd.html
-```
-
-### 5. Run the current automated tests
-
-Run the full test suite with the project virtual environment:
-
-```bash
-.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
-
-Run a single test module:
-
-```bash
-.venv\Scripts\python.exe -m unittest tests.test_ingest -v
-```
-
-```bash
-.venv\Scripts\python.exe -m unittest tests.test_service_controller -v
-```
 
 ---
 
@@ -254,7 +330,7 @@ Example:
 API_URL = "https://iboard-query.ssi.com.vn/stock/group/VN30"
 DB_PATH = "data/stocks.db"
 QUALITY_REPORT_PATH = "output/data_quality_report.json"
-ANALYTICS_HTML_PATH = "output/report-YYYYmmdd.html"
+ANALYTICS_HTML_PATH = "output/analytics_output.html"
 LOG_PATH = "logs/pipeline.log"
 REQUEST_TIMEOUT = 30
 ```
@@ -517,7 +593,7 @@ volume_ratio = current_volume / nullif(avg_5d_volume, 0)
 The analytics result is rendered into:
 
 ```text
-output/report-YYYYmmdd.html
+output/analytics_output.html
 ```
 
 Suggested contents:
@@ -581,41 +657,29 @@ Preferred behavior:
 
 ## Testing
 
-A lightweight `unittest` suite is included in the repository.
+A lightweight test suite is recommended.
 
-### Current test coverage
+### Suggested tests
 
-- `tests/test_ingest.py`
-  - successful HTTP payload parsing
-  - retry behavior on HTTP 429
-  - malformed JSON handling
-  - empty `data` handling
-- `tests/test_service_controller.py`
-  - service success/failure result handling
-  - repository upsert idempotency
-  - controller orchestration over the 3-tier flow
+- Pydantic schema validation on valid and invalid payloads
+- transformation from normalized model to DB row
+- duplicate detection logic
+- OHLC validation logic
+- analytics query returns expected columns
+- unit testing with `unittest`
 
-### How to execute tests
+Example test files:
 
-Run all tests:
+- `tests/test_schemas.py`
+- `tests/test_transform.py`
+- `tests/test_quality.py`
+- `tests/test_analytics.py`
 
-```bash
-.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
-
-Run one file:
+Run tests with:
 
 ```bash
-.venv\Scripts\python.exe -m unittest tests.test_ingest -v
+unittest
 ```
-
-```bash
-.venv\Scripts\python.exe -m unittest tests.test_service_controller -v
-```
-
-### Expected result
-
-All tests should complete with `OK`.
 
 ---
 
@@ -631,104 +695,3 @@ This implementation assumes:
 - and one pipeline run represents a batch load.
 
 ---
-
-## Limitations
-
-Current MVP limitations:
-
-- SQLite is not intended for high-concurrency production workloads
-- no Airflow scheduling yet
-- no dbt layer yet
-- no Docker packaging by default
-- no BI integration yet
-- no streaming ingestion yet
-
-These are deliberate trade-offs for a clean and fast MVP.
-
----
-
-## Planned Extensions
-
-### Airflow
-
-Add orchestration for:
-
-- fetch task
-- validate task
-- load task
-- quality task
-- analytics task
-- publish task
-
-### dbt
-
-A later dbt version would be a good fit once the project moves to PostgreSQL or a warehouse.
-
-In that version:
-
-- Python handles API ingestion,
-- raw/staging tables are loaded,
-- dbt manages transformations and tests,
-- and analytics marts feed dashboards.
-
-### PostgreSQL
-
-Replace SQLite with PostgreSQL for stronger concurrency, more realistic production behavior, and better integration with BI tools.
-
-### Docker
-
-Add containerized execution for reproducibility and deployment simplicity.
-
-### CI/CD
-
-Add GitHub Actions or similar pipelines for:
-
-- linting,
-- tests,
-- packaging,
-- and deployment checks.
-
----
-
-## Discussion Points for Interview
-
-### Why separate Pydantic and SQL schema
-
-Because they solve different problems:
-
-- Pydantic protects the application from bad external data.
-- SQL schema defines how clean data is persisted and queried efficiently.
-
-### Why SQL queries stay in `.sql` files
-
-This makes the analytics logic:
-
-- easier to review,
-- easier to test,
-- easier to optimize,
-- and more aligned with data engineering workflows.
-
-### Why this is still extensible
-
-The current structure can evolve cleanly into:
-
-- Airflow for orchestration,
-- dbt for transformation modeling,
-- PostgreSQL for production storage,
-- and BI tooling for reporting.
-
----
-
-## Submission Notes
-
-The goal of this project is to demonstrate:
-
-- Python ability,
-- SQL capability,
-- relational database thinking,
-- API integration,
-- schema design,
-- data validation discipline,
-- and a modular, extensible data pipeline architecture.
-
-The separation between **Pydantic schema** and **SQL schema** is intentional and is a core design decision in this implementation.

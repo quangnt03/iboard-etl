@@ -25,13 +25,14 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
+data/*
+logs/*
 # PyInstaller
 #   Usually these files are written by a python script from a template
 #   before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
-
+./VN30.json
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -149,6 +150,7 @@ activemq-data/
 
 # Environments
 .env
+.env.local
 .envrc
 .venv
 env/

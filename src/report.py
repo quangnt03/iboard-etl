@@ -1,4 +1,4 @@
-"""HTML reporting utilities."""
+"""Report generation entrypoint."""
 
 from __future__ import annotations
 
@@ -15,10 +15,8 @@ def generate_report(output_path: Path | None = None) -> ReportResult:
         output_path: Optional override for the output file path.
 
     Returns:
-        ReportResult metadata.
+        ReportResult metadata for the generated report.
     """
 
     controller = create_analytics_controller()
     return controller.generate_report(output_path)
-
-

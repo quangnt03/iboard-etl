@@ -1,0 +1,1 @@
+-- SQLite index scaffold for stock price analytics performance.

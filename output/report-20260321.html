@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Intraday Volatility Snapshot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        font-family: "Space Grotesk", sans-serif;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <div class="relative overflow-hidden">
+      <div class="absolute -top-32 -left-24 h-96 w-96 rounded-full bg-indigo-500/20 blur-3xl"></div>
+      <div class="absolute top-40 -right-24 h-96 w-96 rounded-full bg-emerald-500/15 blur-3xl"></div>
+      <div class="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl"></div>
+    </div>
+
+    <main class="relative mx-auto max-w-6xl px-6 py-16">
+      <header class="flex flex-col gap-6">
+        <div class="flex items-center gap-3 text-sm uppercase tracking-[0.3em] text-slate-400">
+          <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
+          VN30 Analytics
+        </div>
+        <div class="flex flex-col gap-3">
+          <h1 class="text-4xl font-semibold text-white md:text-5xl">
+            Intraday Volatility Snapshot
+          </h1>
+          <p class="max-w-2xl text-base text-slate-300">
+            Top 10 most volatile VN30 stocks with volume context.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-4 text-sm text-slate-400">
+          <div class="rounded-full border border-white/10 bg-white/5 px-4 py-2">
+            Generated: 2026-03-21 17:13:28
+          </div>
+          <div class="rounded-full border border-white/10 bg-white/5 px-4 py-2">
+            Source: SSI iBoard API
+          </div>
+        </div>
+      </header>
+
+      
+
+      <section class="mt-10 rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-2xl shadow-slate-900/50">
+        <div class="flex flex-col gap-1 border-b border-white/10 pb-4">
+          <h2 class="text-xl font-semibold text-white">Top Volatility Leaders</h2>
+          <p class="text-sm text-slate-400">Sorted by volatility descending.</p>
+        </div>
+
+        <div class="mt-6 overflow-hidden rounded-2xl border border-white/10">
+          <table class="w-full border-collapse text-sm">
+            <thead class="bg-white/5 text-left text-xs uppercase tracking-widest text-slate-400">
+              <tr>
+                <th class="px-4 py-3">Ticker</th>
+                <th class="px-4 py-3 text-right">Open</th>
+                <th class="px-4 py-3 text-right">High</th>
+                <th class="px-4 py-3 text-right">Low</th>
+                <th class="px-4 py-3 text-right">Volatility %</th>
+                <th class="px-4 py-3 text-right">Today Volume</th>
+                <th class="px-4 py-3 text-right">5-Day Avg Volume</th>
+                <th class="px-4 py-3 text-right">Volume Ratio</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              
+              
+              
+              
+              
+              
+                
+                  
+                
+              
+              
+              <tr class="bg-transparent transition hover:bg-white/5">
+                <td class="px-4 py-3 font-semibold text-white">VIC</td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  148000.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  148000.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  135000.00
+                </td>
+                <td class="px-4 py-3 text-right text-emerald-300">
+                  8.78%
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  10,346,200
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  10,346,200
+                </td>
+                <td class="px-4 py-3 text-right text-cyan-200">
+                  1.00
+                </td>
+              </tr>
+              
+              
+              
+              
+              
+              
+                
+                  
+                
+              
+              
+              <tr class="bg-transparent transition hover:bg-white/5">
+                <td class="px-4 py-3 font-semibold text-white">PLX</td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  46600.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  46600.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  42800.00
+                </td>
+                <td class="px-4 py-3 text-right text-emerald-300">
+                  8.15%
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  7,430,100
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  7,430,100
+                </td>
+                <td class="px-4 py-3 text-right text-cyan-200">
+                  1.00
+                </td>
+              </tr>
+              
+              
+              
+              
+              
+              
+                
+                  
+                
+              
+              
+              <tr class="bg-transparent transition hover:bg-white/5">
+                <td class="px-4 py-3 font-semibold text-white">GAS</td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  88100.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  88800.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  82000.00
+                </td>
+                <td class="px-4 py-3 text-right text-emerald-300">
+                  7.72%
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  3,150,400
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  3,150,400
+                </td>
+                <td class="px-4 py-3 text-right text-cyan-200">
+                  1.00
+                </td>
+              </tr>
+              
+              
+              
+              
+              
+              
+                
+                  
+                
+              
+              
+              <tr class="bg-transparent transition hover:bg-white/5">
+                <td class="px-4 py-3 font-semibold text-white">LPB</td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  43900.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  44000.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  41050.00
+                </td>
+                <td class="px-4 py-3 text-right text-emerald-300">
+                  6.72%
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  1,920,100
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  1,920,100
+                </td>
+                <td class="px-4 py-3 text-right text-cyan-200">
+                  1.00
+                </td>
+              </tr>
+              
+              
+              
+              
+              
+              
+                
+                  
+                
+              
+              
+              <tr class="bg-transparent transition hover:bg-white/5">
+                <td class="px-4 py-3 font-semibold text-white">MSN</td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  75100.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  75500.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  71300.00
+                </td>
+                <td class="px-4 py-3 text-right text-emerald-300">
+                  5.59%
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  8,880,900
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  8,880,900
+                </td>
+                <td class="px-4 py-3 text-right text-cyan-200">
+                  1.00
+                </td>
+              </tr>
+              
+              
+              
+              
+              
+              
+                
+                  
+                
+              
+              
+              <tr class="bg-transparent transition hover:bg-white/5">
+                <td class="px-4 py-3 font-semibold text-white">VRE</td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  25650.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  26150.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  24800.00
+                </td>
+                <td class="px-4 py-3 text-right text-emerald-300">
+                  5.26%
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  8,424,800
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  8,424,800
+                </td>
+                <td class="px-4 py-3 text-right text-cyan-200">
+                  1.00
+                </td>
+              </tr>
+              
+              
+              
+              
+              
+              
+                
+                  
+                
+              
+              
+              <tr class="bg-transparent transition hover:bg-white/5">
+                <td class="px-4 py-3 font-semibold text-white">GVR</td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  32400.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  32400.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  30700.00
+                </td>
+                <td class="px-4 py-3 text-right text-emerald-300">
+                  5.25%
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  4,793,600
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  4,793,600
+                </td>
+                <td class="px-4 py-3 text-right text-cyan-200">
+                  1.00
+                </td>
+              </tr>
+              
+              
+              
+              
+              
+              
+                
+                  
+                
+              
+              
+              <tr class="bg-transparent transition hover:bg-white/5">
+                <td class="px-4 py-3 font-semibold text-white">VHM</td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  102000.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  102000.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  97000.00
+                </td>
+                <td class="px-4 py-3 text-right text-emerald-300">
+                  4.90%
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  6,142,200
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  6,142,200
+                </td>
+                <td class="px-4 py-3 text-right text-cyan-200">
+                  1.00
+                </td>
+              </tr>
+              
+              
+              
+              
+              
+              
+                
+                  
+                
+              
+              
+              <tr class="bg-transparent transition hover:bg-white/5">
+                <td class="px-4 py-3 font-semibold text-white">DGC</td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  55500.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  58000.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  55500.00
+                </td>
+                <td class="px-4 py-3 text-right text-emerald-300">
+                  4.50%
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  34,977,300
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  34,977,300
+                </td>
+                <td class="px-4 py-3 text-right text-cyan-200">
+                  1.00
+                </td>
+              </tr>
+              
+              
+              
+              
+              
+              
+                
+                  
+                
+              
+              
+              <tr class="bg-transparent transition hover:bg-white/5">
+                <td class="px-4 py-3 font-semibold text-white">SAB</td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  44350.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  44350.00
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  42600.00
+                </td>
+                <td class="px-4 py-3 text-right text-emerald-300">
+                  3.95%
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  1,019,800
+                </td>
+                <td class="px-4 py-3 text-right text-slate-200">
+                  1,019,800
+                </td>
+                <td class="px-4 py-3 text-right text-cyan-200">
+                  1.00
+                </td>
+              </tr>
+              
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
