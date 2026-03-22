@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Generator
 
@@ -70,6 +70,7 @@ class SQLiteConnectionManager:
             "avg",
             "volume",
             "market_cap",
+            "updated_at",
         ]
         return columns != expected_columns
 
@@ -214,6 +215,10 @@ class VN30Repository:
 
         payload = record.model_dump()
         payload["timestamp"] = record.timestamp.isoformat()
+        if record.updated_at is None:
+            payload["updated_at"] = datetime.now(tz=timezone.utc).isoformat()
+        else:
+            payload["updated_at"] = record.updated_at.isoformat()
         return payload
 
     @staticmethod
@@ -222,6 +227,9 @@ class VN30Repository:
 
         data = dict(row)
         data["timestamp"] = datetime.fromisoformat(data["timestamp"])
+        updated_at_value = data.get("updated_at")
+        if isinstance(updated_at_value, str):
+            data["updated_at"] = datetime.fromisoformat(updated_at_value)
         return VN30Row.model_validate(data)
 
 

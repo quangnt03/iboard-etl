@@ -13,5 +13,6 @@ CREATE TABLE IF NOT EXISTS vn30_stock (
     avg REAL,
     volume INTEGER,
     market_cap REAL,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (ticker, timestamp)
 );

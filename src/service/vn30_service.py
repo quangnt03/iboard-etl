@@ -52,7 +52,7 @@ class VN30Service:
                 source_url=self.fetcher.api_url,
                 success=True,
                 message="VN30 data fetched and stored successfully.",
-                quality_passed=quality_report.summary.quality_passed,
+                quality_passed=quality_report.summary.overall_status == "pass",
                 quality_report_path=quality_report_path,
             )
         except ValueError as exc:
@@ -62,6 +62,6 @@ class VN30Service:
                 source_url=self.fetcher.api_url,
                 success=False,
                 message=str(exc),
-                quality_passed=quality_report.summary.quality_passed,
+                quality_passed=quality_report.summary.overall_status == "pass",
                 quality_report_path=quality_report_path,
             )

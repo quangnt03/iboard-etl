@@ -49,7 +49,8 @@ class TestReportGeneration(unittest.TestCase):
                 open REAL,
                 high REAL,
                 low REAL,
-                volume INTEGER
+                volume INTEGER,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
             """
         )

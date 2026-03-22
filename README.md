@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project implements a compact but production-minded data pipeline for VN30 stock data.
+This project implements a compact data pipeline for VN30 stock data.
 
 **Features**:
 
@@ -11,118 +11,7 @@ This project implements a compact but production-minded data pipeline for VN30 s
 - load cleaned records into a SQLite database,
 - execute SQL analytics using a database schema defined separately from the application models,
 - export a JSON data quality report,
-- and generate a self-contained HTML analytics report.
-
----
-
-## Design Principle: Separate SQL Schema and Pydantic Schema
-
-This project uses two different schema layers for different responsibilities.
-
-### 1. Pydantic schema
-
-Pydantic models are responsible for:
-
-- validating API payloads,
-- coercing types,
-- enforcing required fields,
-- defining application-level data contracts,
-- and providing a clean internal representation of stock records.
-
-These models live in the Python codebase and should be used before loading data into the database.
-
-Typical file:
-
-```text
-src/schemas.py
-```
-
-Example responsibilities:
-
-- map raw API fields into normalized field names,
-- validate numeric values,
-- ensure required fields are present,
-- and standardize timestamps.
-
-### 2. SQL schema
-
-The SQL schema is responsible for:
-
-- defining tables,
-- data types at the database level,
-- uniqueness constraints,
-- indexes,
-- and the relational structure required for analytics.
-
-These definitions should live in SQL files and be executed by the database setup layer.
-
-Typical files:
-
-```text
-sql/schema.sql
-sql/indexes.sql
-sql/analytics_queries.sql
-```
-
----
-
-## Project Structure
-
-```text
-project/
-|-- src/
-|   |-- config.py
-|   |-- db.py
-|   |-- ingest.py
-|   |-- transform.py
-|   |-- quality_check.py
-|   |-- analytics.py
-|   |-- report.py
-|   |-- schemas.py
-|   `-- utils.py
-|-- scripts/
-|   `-- cli.py
-|-- sql/
-|   |-- schema.sql
-|   |-- indexes.sql
-|   `-- analytics_queries.sql
-|-- output/
-|   |-- data_quality_report.json
-|   `-- report-YYYYmmdd.html
-|-- logs/
-|   `-- pipeline.log
-|-- tests/
-|   |-- test_transform.py
-|   |-- test_quality.py
-|   |-- test_analytics.py
-|   `-- test_schemas.py
-|-- main.py
-`-- README.md
-```
-
-## Architecture
-
-```mermaid
-flowchart TD
-    A[SSI iBoard API] --> B[ingest.py]
-    B --> C[schemas.py: Pydantic validation]
-    C --> D[transform.py]
-    D --> E[(SQLite via SQL schema)]
-    E --> F[quality_check.py]
-    E --> G[analytics.py]
-    F --> H[data_quality_report.json]
-    G --> I[report-YYYYmmdd.html]
-```
-
-### Processing Flow
-
-1. `ingest.py` fetches raw JSON data from the configured API endpoint.
-2. `schemas.py` validates and normalizes records using Pydantic models.
-3. `transform.py` converts validated records into database-ready rows if needed.
-4. `db.py` initializes the database using the SQL schema and inserts records.
-5. `quality_check.py` validates the loaded data and writes a JSON report.
-6. `analytics.py` executes SQL queries stored in separate SQL files.
-7. `report.py` renders the final HTML output.
+- and generate a  HTML analytics report.
 
 ---
 
@@ -131,7 +20,7 @@ flowchart TD
 ## Prerequisites
 
 - Python 3.10+
-- pip
+- uv
 - SQLite3
 
 Optional:
@@ -143,592 +32,192 @@ Optional:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+uv sync
 ```
 
-Suggested dependencies include:
+Copy the environment template:
 
-- `requests`
-- `pydantic`
-- `pandas` (optional)
-- `jinja2` (optional)
-- `unittest` (optional)
+```bash
+cp .env.template .env.local
+```
+
+```powershell
+Copy-Item .env.template .env.local
+```
+
+Example `.env` file:
+
+```bash
+BASE_URL=https://iboard-query.ssi.com.vn/stock/group/VN30
+DB_PATH=data/stocks.db
+SCHEMA_PATH=sql/schema.sql
+LOG_PATH=logs/pipeline.log
+QUALITY_REPORT_PATH=logs/
+ANALYTICS_SQL_PATH=sql/analytics_queries.sql
+REPORT_TEMPLATE_PATH=src/templates/report.j2
+REPORT_OUTPUT_DIR=output
+REQUEST_TIMEOUT_SECONDS=30.0
+MAX_RETRIES=3
+RETRY_COOLDOWN_SECONDS=2.0
+```
+
+Populate the database: Create a SQLite file under `data` directory (default: `data/stocks.db`)
 
 ---
 
-## How to Run
+## Quick start
 
-### 1. Run the full pipeline
+### 1. Configuration
 
-```bash
-python main.py
-```
-
-### 2. Expected outputs
-
-After a successful run, the following files should be generated:
-
-- `output/data_quality_report.json`
-- `output/report-YYYYmmdd.html`
-- `logs/pipeline.log`
-
-### 3. Run the interactive CLI menu
-
-Run the interactive menu (quality-gated pipeline included):
-
-```bash
-python scripts/cli.py
-```
-
-Menu options:
-
-1. Run full pipeline (quality-gated)
-2. Run quality check using fresh API fetch (no DB write)
-3. Generate analytics report from DB
-4. Exit
-
-Quality-gated behavior:
-
-- If the latest quality report JSON (in `logs/`) has `failed_rules == 0` and `total_violations == 0`, the pipeline uses DB data to run a new quality report and generate the analytics report.
-- Otherwise, the pipeline refetches from the API and proceeds.
-
-### 4. Run CLI tools directly
-
-Fetch VN30 data from the API:
-
-```bash
-python src/ingest.py --help
-python src/ingest.py --api-url https://iboard-query.ssi.com.vn/stock/group/VN30
-python src/ingest.py --output-json output/vn30_snapshot.json --limit 10
-```
-
-Quality check the SQLite database:
-
-```bash
-python src/quality_check.py --help
-python src/quality_check.py --db-path data/stocks.db --report-path output/data_quality_report.json
-```
-
-Generate the analytics HTML report:
-
-```bash
-python src/analytics.py --help
-python src/analytics.py --output-path output/report-YYYYmmdd.html
-```
-
-### 5. Run the current automated tests
-
-Run the full test suite with the project virtual environment:
-
-```bash
-.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
-
-Run a single test module:
-
-```bash
-.venv\Scripts\python.exe -m unittest tests.test_ingest -v
-```
-
-```bash
-.venv\Scripts\python.exe -m unittest tests.test_service_controller -v
-```
-
----
-
-## Configuration
-
-Configuration should be centralized in `src/config.py`.
+Configuration should be centralized in `.env`.
 
 Suggested configuration values:
 
 - API endpoint
 - database path
 - output file paths
-- request timeout
+- request timeout/retries
 - log file path
 
 Example:
 
-```python
-API_URL = "https://iboard-query.ssi.com.vn/stock/group/VN30"
-DB_PATH = "data/stocks.db"
-QUALITY_REPORT_PATH = "output/data_quality_report.json"
-ANALYTICS_HTML_PATH = "output/report-YYYYmmdd.html"
-LOG_PATH = "logs/pipeline.log"
-REQUEST_TIMEOUT = 30
+```bash
+BASE_URL=https://iboard-query.ssi.com.vn/stock/group/VN30
+DB_PATH=data/stocks.db
+SCHEMA_PATH=sql/schema.sql
+LOG_PATH=logs/pipeline.log
+QUALITY_REPORT_PATH=logs/
+ANALYTICS_SQL_PATH=sql/analytics_queries.sql
+REPORT_TEMPLATE_PATH=src/templates/report.j2
+REPORT_OUTPUT_DIR=output
+REQUEST_TIMEOUT_SECONDS=30.0
+MAX_RETRIES=3
+RETRY_COOLDOWN_SECONDS=2.0
 ```
 
----
+### 2. Run the full pipeline
 
-## Pydantic Schema
-
-The Pydantic layer should define the normalized data model used by the application.
-
-Typical example:
-
-```python
-from datetime import datetime
-from pydantic import BaseModel, Field
-from typing import Optional
-
-class StockRecord(BaseModel):
-    ticker: str
-    price: Optional[float] = None
-    change_pct: Optional[float] = None
-    volume: Optional[int] = None
-    market_cap: Optional[float] = None
-    timestamp: Optional[datetime] = None
-    open_price: Optional[float] = None
-    high_price: Optional[float] = None
-    low_price: Optional[float] = None
-    close_price: Optional[float] = None
+```bash
+python main.py
 ```
 
-### Pydantic responsibilities
+Select option `1` in the menu to run the full pipeline.
+After a successful run, the following files should be generated:
 
-- validate raw payload fields,
-- coerce types,
-- reject invalid records when necessary,
-- define internal field names,
-- and provide a stable contract between ingestion and persistence.
-
-### Recommended Pydantic modeling approach
-
-Use at least two layers of models if helpful:
-
-- `RawStockRecord` for parsing source-specific input,
-- `StockRecord` for normalized internal representation.
-
-This is useful when raw API field names differ significantly from the final internal schema.
-
----
-
-## SQL Schema
-
-The SQL schema should be fully separated from the Python validation models.
-
-### Recommended SQL files
-
-#### `sql/schema.sql`
-
-Contains:
-
-- table definitions,
-- primary and unique constraints,
-- column types,
-- and core database structure.
-
-#### `sql/indexes.sql`
-
-Contains:
-
-- performance-oriented indexes,
-- time-series indexes,
-- and deduplication-supporting indexes.
-
-#### `sql/analytics_queries.sql`
-
-Contains:
-
-- reusable analytics queries,
-- CTE-based transformations,
-- aggregations,
-- and ranking logic.
-
-### Example storage table
-
-Suggested main table:
-
-- `stock_prices`
-
-Suggested columns:
-
-- `ticker`
-- `timestamp`
-- `trade_date`
-- `price`
-- `change_pct`
-- `volume`
-- `market_cap`
-- `open_price`
-- `high_price`
-- `low_price`
-- `close_price`
-- `source`
-- `ingested_at`
-
-### Recommended SQL constraints
-
-- unique `(ticker, timestamp)`
-
-### Recommended SQL indexes
-
-- index on `timestamp`
-- index on `trade_date`
-- composite index on `(ticker, timestamp)`
-
----
-
-## API Notes
-
-Configured endpoint:
-
-```text
-GET https://iboard-query.ssi.com.vn/stock/group/VN30
-```
-
-The live top-level response wrapper may look like:
-
-```json
-{
-  "code": "SUCCESS",
-  "message": "Call API /stock/group/VN30 successful",
-  "data": []
-}
-```
-
-The pipeline should not assume that `data` is always populated. It should defensively handle:
-
-- empty arrays,
-- missing fields,
-- null values,
-- and field name mismatches.
-
-This is one of the reasons the Pydantic validation layer is important.
-
----
-
-## Data Validation and Normalization Strategy
-
-### Step 1: Fetch raw payload
-
-The ingestion layer fetches raw JSON from the API.
-
-### Step 2: Parse each raw item with Pydantic
-
-Each row is passed into a Pydantic model that:
-
-- normalizes names,
-- coerces numeric values,
-- validates required fields,
-- and returns a consistent internal record.
-
-### Step 3: Convert validated record to database row
-
-The validated model is converted into a structure matching the SQL storage schema.
-
-### Step 4: Insert into SQL table
-
-`db.py` performs the actual insert using the SQL schema and indexes already defined in the SQL layer.
-
----
-
-## Data Quality Checks
-
-The pipeline includes a dedicated data quality stage after loading.
-
-### Minimum checks
-
-- required fields are not null
-- duplicate detection on `(ticker, timestamp)`
-- numeric fields are non-negative
-
-### Recommended additional checks
-
-- `high_price >= low_price`
-- `high_price >= open_price`
-- `high_price >= close_price`
-- `low_price <= open_price`
-- `low_price <= close_price`
-- stale timestamp detection
-
-### Output
-
-The report is written to:
-
-```text
-output/data_quality_report.json
-```
-
-Recommended report structure:
+- `output/qac_YYYY-MM-dd.json`
 
 ```json
 {
   "run_metadata": {
-    "run_time": "2026-03-20T10:00:00",
-    "source": "SSI iBoard API"
+    "run_id": "2026-03-22T11:14:21.175453+07:00",
+    "source": "https://iboard-query.ssi.com.vn/stock/group/VN30",
+    "dataset": "VN30",
+    "generated_at": "2026-03-22T11:14:21.175453+07:00",
+    "trading_timezone": "Asia/Ho_Chi_Minh",
+    "records_checked": 1
   },
   "summary": {
-    "rows_checked": 30,
-    "rows_failed": 2
+    "total_rules": 12,
+    "passed_rules": 12,
+    "failed_rules": 0,
+    "overall_status": "pass"
   },
   "checks": [
     {
-      "name": "non_negative_volume",
-      "passed": false,
-      "failed_count": 1
+      "rule_name": "No NULL prices",
+      "rule_code": "no_null_prices",
+      "description": "Every record must have a non-null price.",
+      "logic": "price IS NOT NULL",
+      "status": "pass",
+      "violation_count": 0,
+      "affected_tickers": [],
+      "sample_violations": []
+    },
+    {
+      "rule_name": "Price change within bounds",
+      "rule_code": "price_change_within_bounds",
+      "description": "change_pct must be within +/-30%.",
+      "logic": "-30 <= change_pct <= 30",
+      "status": "pass",
+      "violation_count": 0,
+      "affected_tickers": [],
+      "sample_violations": []
     }
-  ],
-  "failed_samples": []
+    ...
+  ]
 }
 ```
 
----
+- `output/report-YYYYmmdd.html`
+  ![sample_html_report](./docs/dashboard_example.png)
+- `logs/pipeline.log`
 
-## Analytics Logic
+To execute each features manually, please refer to [CLI Manuals](./docs/CLI_MANUALS.md)
 
-The analytics stage should be SQL-first.
-
-All analytics queries should be written in:
-
-```text
-sql/analytics_queries.sql
-```
-
-This keeps SQL logic reviewable and separate from Python orchestration.
-
-### Required metrics
-
-- intraday volatility
-- current volume
-- 5-day average volume
-- volume ratio versus 5-day average
-- top 10 most volatile stocks
-
-### Suggested SQL techniques
-
-- CTEs
-- joins
-- aggregations
-- window functions where useful
-
-### Example formulas
+## Project Structure
 
 ```text
-intraday_volatility = (high_price - low_price) / nullif(open_price, 0)
-volume_ratio = current_volume / nullif(avg_5d_volume, 0)
+├── .agent/                     # Local workspace metadata or agent-related helper files used during development
+├── .venv/                      # Python virtual environment with installed dependencies for local execution
+├── artifacts/                  # Generated auxiliary artifacts, intermediate exports, or supporting deliverables
+├── data/                       # Local data storage such as SQLite database files, cached raw payloads, or sample datasets
+├── dist/                       # Build or packaged distribution outputs generated for release or sharing
+├── logs/                       # Runtime logs, quality check logs, and execution traces for debugging and monitoring
+├── output/                     # Final pipeline deliverables such as HTML reports, JSON quality reports, and CSV exports
+├── scripts/                    # Utility scripts for setup, maintenance, local automation, or one-off execution tasks
+├── sql/                        # SQL assets including schema definitions, indexes, validation queries, and analytics queries
+├── src/                        # Main application source code for the data pipeline
+│   ├── __pycache__/            # Python bytecode cache generated automatically during local execution
+│   ├── controller/             # High-level orchestration layer coordinating pipeline steps or execution flows
+│   ├── models/                 # Data models such as Pydantic schemas, report models, and normalized record definitions
+│   ├── repository/             # Data access layer responsible for SQL execution, database interactions, and persistence
+│   ├── service/                # Core business logic for ingestion, transformation, validation, analytics, and reporting
+│   ├── templates/              # HTML or text templates used to render analytics reports and outputs
+│   ├── __init__.py             # Marks src as a Python package
+│   ├── analytics.py            # Analytics logic for SQL-driven metrics, ranking, and report-ready result generation
+│   ├── config.py               # Centralized configuration management for paths, API settings, and runtime options
+│   ├── db.py                   # Database initialization, connection handling, schema setup, and low-level DB utilities
+│   ├── ingest.py               # API ingestion pipeline for fetching, parsing, and loading upstream market data
+│   ├── quality_check.py        # Data quality validation logic and generation of structured quality reports
+│   └── utils.py                # Shared helper functions such as logging, time handling, formatting, and common utilities
+├── tasks/                      # Personal project management notes, checklists, lessons learned, and execution planning
+│   ├── lessons.md              # Notes on implementation learnings, issues encountered, and useful observations
+│   └── todo.md                 # Task backlog, implementation checklist, or remaining work items
+├── tests/                      # Automated tests including unit tests and potentially integration or smoke tests
+├── .env.local                  # Local environment variable values for development, not intended for public sharing
+├── .env.template               # Template of required environment variables for setup and reproducible configuration
+├── .gitignore                  # Git ignore rules excluding virtual environments, caches, outputs, and sensitive local files
+├── .python-version             # Python version pinning for local tooling or environment managers
+├── AGENTS.md                   # Internal instructions, conventions, or notes for AI-assisted or structured development workflows
+├── CONTEXT.md                  # Project context, assumptions, design notes, and implementation references
+├── main.py                     # Main entrypoint to run the end-to-end pipeline or selected execution flow
+├── pyproject.toml              # Python project configuration, dependency definitions, and tool settings
+├── README.md                   # Main project documentation covering setup, architecture, usage, and design decisions
+└── uv.lock                     # Locked dependency file for reproducible installs when using uv
 ```
-
----
-
-## HTML Output
-
-The analytics result is rendered into:
-
-```text
-output/report-YYYYmmdd.html
-```
-
-Suggested contents:
-
-- dark theme layout
-- top 10 most volatile stocks
-- columns:
-  - ticker
-  - volatility
-  - current volume
-  - 5-day average volume
-  - volume ratio
-- summary section
-- generation timestamp
 
 ---
 
-## Logging
+## Schemas and Validation
 
-Logging should be written to:
-
-```text
-logs/pipeline.log
-```
-
-The log should include:
-
-- pipeline start and end time,
-- rows fetched,
-- rows validated,
-- rows inserted,
-- rows skipped,
-- validation failures,
-- SQL failures,
-- and unexpected exceptions.
+Schema definitions, API payload notes, and data validation rules now live in
+[Schemas](./docs/SCHEMAS.md).
 
 ---
 
-## Error Handling
+## Analytics and Logging
 
-The implementation should gracefully handle:
-
-- request failures,
-- timeouts,
-- invalid JSON,
-- empty payloads,
-- type conversion failures,
-- Pydantic validation failures,
-- duplicate inserts,
-- invalid numeric values,
-- and SQL execution errors.
-
-Preferred behavior:
-
-- log clearly,
-- skip invalid records when appropriate,
-- fail loudly when the pipeline cannot continue,
-- and avoid silent corruption.
+Analytics logic, HTML report notes, and logging details now live in
+[Analytics and Logging](./docs/ANALYTICS_LOGGING.md).
 
 ---
 
 ## Testing
 
-A lightweight `unittest` suite is included in the repository.
-
-### Current test coverage
-
-- `tests/test_ingest.py`
-  - successful HTTP payload parsing
-  - retry behavior on HTTP 429
-  - malformed JSON handling
-  - empty `data` handling
-- `tests/test_service_controller.py`
-  - service success/failure result handling
-  - repository upsert idempotency
-  - controller orchestration over the 3-tier flow
-
-### How to execute tests
-
-Run all tests:
-
-```bash
-.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
-
-Run one file:
-
-```bash
-.venv\Scripts\python.exe -m unittest tests.test_ingest -v
-```
-
-```bash
-.venv\Scripts\python.exe -m unittest tests.test_service_controller -v
-```
-
-### Expected result
-
-All tests should complete with `OK`.
-
----
-
-## Assumptions
-
-This implementation assumes:
-
-- the API endpoint is reachable over HTTPS,
-- the endpoint may return empty `data` arrays,
-- upstream field names may differ from normalized internal names,
-- Pydantic is used for validation before persistence,
-- SQL files define the storage and analytics layer,
-- and one pipeline run represents a batch load.
-
----
-
-## Limitations
-
-Current MVP limitations:
-
-- SQLite is not intended for high-concurrency production workloads
-- no Airflow scheduling yet
-- no dbt layer yet
-- no Docker packaging by default
-- no BI integration yet
-- no streaming ingestion yet
-
-These are deliberate trade-offs for a clean and fast MVP.
+Refer to  [CLI Manuals](./docs/CLI_MANUALS.md) for more information to execute tests.
 
 ---
 
 ## Planned Extensions
 
-### Airflow
-
-Add orchestration for:
-
-- fetch task
-- validate task
-- load task
-- quality task
-- analytics task
-- publish task
-
-### dbt
-
-A later dbt version would be a good fit once the project moves to PostgreSQL or a warehouse.
-
-In that version:
-
-- Python handles API ingestion,
-- raw/staging tables are loaded,
-- dbt manages transformations and tests,
-- and analytics marts feed dashboards.
-
-### PostgreSQL
-
-Replace SQLite with PostgreSQL for stronger concurrency, more realistic production behavior, and better integration with BI tools.
-
-### Docker
-
-Add containerized execution for reproducibility and deployment simplicity.
-
-### CI/CD
-
-Add GitHub Actions or similar pipelines for:
-
-- linting,
-- tests,
-- packaging,
-- and deployment checks.
-
----
-
-## Discussion Points for Interview
-
-### Why separate Pydantic and SQL schema
-
-Because they solve different problems:
-
-- Pydantic protects the application from bad external data.
-- SQL schema defines how clean data is persisted and queried efficiently.
-
-### Why SQL queries stay in `.sql` files
-
-This makes the analytics logic:
-
-- easier to review,
-- easier to test,
-- easier to optimize,
-- and more aligned with data engineering workflows.
-
-### Why this is still extensible
-
-The current structure can evolve cleanly into:
-
-- Airflow for orchestration,
-- dbt for transformation modeling,
-- PostgreSQL for production storage,
-- and BI tooling for reporting.
-
----
-
-## Submission Notes
-
-The goal of this project is to demonstrate:
-
-- Python ability,
-- SQL capability,
-- relational database thinking,
-- API integration,
-- schema design,
-- data validation discipline,
-- and a modular, extensible data pipeline architecture.
-
-The separation between **Pydantic schema** and **SQL schema** is intentional and is a core design decision in this implementation.
+Refer to [Future Works](./docs/FUTURE_WORKS.md)

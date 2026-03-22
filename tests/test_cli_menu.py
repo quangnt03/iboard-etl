@@ -12,7 +12,7 @@ class TestCliMenu(unittest.TestCase):
         self.assertGreaterEqual(len(actions), 3)
         keys = {action.key for action in actions}
         self.assertIn("1", keys)
-        self.assertIn("4", keys)
+        self.assertIn("5", keys)
 
     def test_main_help_exits(self) -> None:
         """Ensure --help exits cleanly."""

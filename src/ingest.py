@@ -7,14 +7,21 @@ import json
 import sys
 import socket
 import time
+from pathlib import Path
 from http import HTTPStatus
 from typing import Any
 from urllib import error, request
 
 from pydantic import ValidationError
 
+if __name__ == "__main__" and __package__ is None:
+    project_root = Path(__file__).resolve().parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+
 from src.config import CONFIG, AppConfig
 from src.models.vn30_stock import VN30ApiResponse, VN30Record
+from src.repository.vn30_repository import SQLiteConnectionManager, VN30Repository
 from src.utils import get_logger
 
 
@@ -108,10 +115,23 @@ class VN30Fetcher:
         """Fetch records with retry handling for transient failures."""
 
         last_error: Exception | None = None
+        self.logger.info(
+            "fetch_records_start source_url=%s max_retries=%s timeout_seconds=%s",
+            self.api_url,
+            self.max_retries,
+            self.timeout_seconds,
+        )
         for attempt in range(1, self.max_retries + 1):
             try:
                 payload = self.fetch_payload()
-                return self.parse_response(payload)
+                records = self.parse_response(payload)
+                self.logger.info(
+                    "fetch_records_success source_url=%s records=%s attempt=%s",
+                    self.api_url,
+                    len(records),
+                    attempt,
+                )
+                return records
             except error.HTTPError as exc:
                 last_error = exc
                 if not self._should_retry_http_status(exc.code) or attempt == self.max_retries:
@@ -179,6 +199,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional path to write fetched records as JSON.",
     )
     parser.add_argument(
+        "--no-db-write",
+        action="store_true",
+        help="Skip SQLite persistence after fetching.",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=5,
@@ -190,6 +215,34 @@ def build_parser() -> argparse.ArgumentParser:
         help="Suppress stdout summary output.",
     )
     return parser
+
+
+def persist_records(records: list[VN30Record], config: AppConfig) -> int:
+    """Persist fetched records to SQLite.
+
+    Args:
+        records: Records to persist.
+        config: Application config providing DB paths.
+
+    Returns:
+        Number of rows stored.
+    """
+
+    connection_manager = SQLiteConnectionManager(
+        database_path=config.database_path,
+        schema_path=config.schema_path,
+    )
+    connection_manager.initialize()
+    repository = VN30Repository(connection_manager)
+    stored_count = repository.upsert_many(records)
+    logger = get_logger(CONFIG.log_path)
+    logger.info(
+        "persist_records_complete records=%s stored=%s database_path=%s",
+        len(records),
+        stored_count,
+        config.database_path,
+    )
+    return stored_count
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -221,6 +274,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Fetch failed: {exc}", file=sys.stderr)
         return 1
 
+    stored_count: int | None = None
+    if not args.no_db_write:
+        stored_count = persist_records(records, config)
+
     if args.output_json:
         output_payload = [record.model_dump() for record in records]
         with open(args.output_json, "w", encoding="utf-8") as handle:
@@ -228,7 +285,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.quiet:
         tickers = [record.ticker for record in records[: args.limit]]
-        print(f"Fetched {len(records)} records.")
+        stored_suffix = (
+            f" Stored {stored_count} rows to SQLite." if stored_count is not None else ""
+        )
+        print(f"Fetched {len(records)} records.{stored_suffix}")
         if tickers:
             print("Sample tickers:", ", ".join(tickers))
 

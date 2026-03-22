@@ -1,6 +1,6 @@
 # Pipeline Todo
 
-- [ ] Implement CLI `main()` function with parameters for `src/ingest.py` and `src/quality_checks.py` to run in standalone mode in command line
+- [x] Implement CLI `main()` function with parameters for `src/ingest.py` and `src/quality_checks.py` to run in standalone mode in command line
 - [ ] Write a SQL in the `src/sql/analytic_queries.sql` to calculate intraday volatility of stock and answer the question "Which stocks had the highest intraday volatility (high − low) / open price today?”
 - [ ] Write a SQL in the `src/sql/analytic_queries.sql` to calculate average volume in 5-day window of stock and answer the question "How does their volume compare to their 5-day average?"
 - [ ] Use Jinja and tailwindcss to create a report template in HTML (`src/templates/report.j2`), contain a dark-themed tableSorted by volatility descending, top 10. Columns: Ticker, Open, High, Low, Volatility %, Today Volume, 5-Day Avg Volume, Volume Ratio

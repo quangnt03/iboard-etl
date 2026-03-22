@@ -54,7 +54,8 @@ def _setup_db() -> sqlite3.Connection:
             ticker TEXT NOT NULL,
             open REAL,
             high REAL,
-            low REAL
+            low REAL,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         """
     )

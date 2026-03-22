@@ -13,10 +13,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.config import CONFIG, AppConfig  # noqa: E402
-from src.ingest import FetchError, create_vn30_fetcher  # noqa: E402
+from src.ingest import FetchError, create_vn30_fetcher, persist_records  # noqa: E402
 from src.quality_check import VN30QualityChecker  # noqa: E402
-from src.report import generate_report  # noqa: E402
-from main import run_pipeline  # noqa: E402
+from src.analytics import generate_report  # noqa: E402
+from scripts.pipeline import run_pipeline  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -155,11 +155,34 @@ def action_quality_check() -> None:
 
     checker = VN30QualityChecker(report_directory=report_directory)
     report, report_path = checker.validate_and_write(records, fetcher.api_url)
+    total_violations = sum(check.violation_count for check in report.checks)
     print(
         f"Quality report: {report_path} "
         f"(failed_rules={report.summary.failed_rules}, "
-        f"violations={report.summary.total_violations})"
+        f"violations={total_violations})"
     )
+
+
+def action_fetch_records() -> None:
+    """Fetch records and optionally persist them to SQLite."""
+
+    config = build_config_overrides()
+    skip_db_write = prompt_yes_no("Skip SQLite write?", default=False)
+    fetcher = create_vn30_fetcher(config)
+    try:
+        records = fetcher.fetch_records()
+    except FetchError as exc:
+        print(f"Fetch failed: {exc}")
+        return
+
+    stored_count: int | None = None
+    if not skip_db_write:
+        stored_count = persist_records(records, config)
+
+    stored_suffix = (
+        f" Stored {stored_count} rows to SQLite." if stored_count is not None else ""
+    )
+    print(f"Fetched {len(records)} records.{stored_suffix}")
 
 
 def action_generate_report() -> None:
@@ -186,9 +209,10 @@ def get_menu_actions() -> list[MenuAction]:
 
     return [
         MenuAction("1", "Run full pipeline", action_run_pipeline),
-        MenuAction("2", "Run quality check (fresh fetch)", action_quality_check),
-        MenuAction("3", "Generate analytics report from DB", action_generate_report),
-        MenuAction("4", "Exit", action_exit),
+        MenuAction("2", "Fetch records (optional DB write)", action_fetch_records),
+        MenuAction("3", "Run quality check (fresh fetch)", action_quality_check),
+        MenuAction("4", "Generate analytics report from DB", action_generate_report),
+        MenuAction("5", "Exit", action_exit),
     ]
 
 
@@ -206,7 +230,7 @@ def run_menu() -> None:
             print("Invalid selection. Try again.")
             continue
         action.handler()
-        if action.key == "4":
+        if action.key == "5":
             break
 
 

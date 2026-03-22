@@ -27,7 +27,7 @@ class TestPipelineQualityGate(unittest.TestCase):
         cursor = connection.cursor()
         cursor.execute(
             """
-            CREATE TABLE vn30_stock (
+            CREATE TABLE IF NOT EXISTS vn30_stock (
                 timestamp TEXT NOT NULL,
                 ticker TEXT NOT NULL,
                 price REAL,
@@ -39,14 +39,29 @@ class TestPipelineQualityGate(unittest.TestCase):
                 high REAL,
                 avg REAL,
                 volume INTEGER,
-                market_cap REAL
+                market_cap REAL,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
             """
         )
         cursor.execute(
             """
-            INSERT INTO vn30_stock (timestamp, ticker, price, change, change_pct, open, close, low, high, avg, volume, market_cap)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            INSERT INTO vn30_stock (
+                timestamp,
+                ticker,
+                price,
+                change,
+                change_pct,
+                open,
+                close,
+                low,
+                high,
+                avg,
+                volume,
+                market_cap,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """,
             (
                 "2026-03-20T10:00:00+00:00",
@@ -61,6 +76,7 @@ class TestPipelineQualityGate(unittest.TestCase):
                 10.0,
                 100,
                 1000.0,
+                "2026-03-20T10:05:00+00:00",
             ),
         )
         connection.commit()
@@ -68,16 +84,36 @@ class TestPipelineQualityGate(unittest.TestCase):
 
     def _write_report(self, failed_rules: int, total_violations: int) -> Path:
         path = self.logs_dir / "qac_2026-03-20.json"
+        total_rules = 1
+        passed_rules = total_rules - failed_rules
+        overall_status = "pass" if failed_rules == 0 else "fail"
         payload = {
-            "generated_at": "2026-03-20T10:00:00+07:00",
-            "source_url": CONFIG.ssi_iboard_endpoint,
-            "summary": {
-                "rows_checked": 1,
-                "failed_rules": failed_rules,
-                "total_violations": total_violations,
-                "quality_passed": failed_rules == 0,
+            "run_metadata": {
+                "run_id": "2026-03-20T10:00:00+07:00",
+                "source": CONFIG.ssi_iboard_endpoint,
+                "dataset": "VN30",
+                "generated_at": "2026-03-20T10:00:00+07:00",
+                "trading_timezone": "Asia/Ho_Chi_Minh",
+                "records_checked": 1,
             },
-            "rules": [],
+            "summary": {
+                "total_rules": total_rules,
+                "passed_rules": passed_rules,
+                "failed_rules": failed_rules,
+                "overall_status": overall_status,
+            },
+            "checks": [
+                {
+                    "rule_name": "Dummy rule",
+                    "rule_code": "dummy_rule",
+                    "description": "Placeholder rule for quality gate tests.",
+                    "logic": "always true",
+                    "status": "pass" if total_violations == 0 else "fail",
+                    "violation_count": total_violations,
+                    "affected_tickers": [],
+                    "sample_violations": [],
+                }
+            ],
         }
         path.write_text(json.dumps(payload), encoding="utf-8")
         return path

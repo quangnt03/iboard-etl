@@ -38,6 +38,7 @@ class VN30Record(BaseModel):
     avg: float | None = Field(default=None, alias="avgPrice")
     volume: int | None = Field(default=None, alias="stockVol")
     market_cap: float | None = None
+    updated_at: datetime | None = None
 
     @field_validator("timestamp", mode="before")
     @classmethod
@@ -76,6 +77,7 @@ class VN30Row(BaseModel):
     avg: float | None = None
     volume: int | None = None
     market_cap: float | None = None
+    updated_at: datetime | None = None
 
 
 class FetchPopulationResult(BaseModel):
@@ -105,37 +107,3 @@ class PopulationResponse(BaseModel):
     message: str
     quality_passed: bool | None = None
     quality_report_path: Path | None = None
-
-
-class QualityRuleResult(BaseModel):
-    """Represent the result of one quality validation rule."""
-
-    model_config = ConfigDict(frozen=True)
-
-    name: str
-    description: str
-    passed: bool
-    violation_count: int
-    anomalous_tickers: list[str] = Field(default_factory=list)
-
-
-class QualityReportSummary(BaseModel):
-    """Represent summary statistics for a quality validation run."""
-
-    model_config = ConfigDict(frozen=True)
-
-    rows_checked: int
-    failed_rules: int
-    total_violations: int
-    quality_passed: bool
-
-
-class QualityReport(BaseModel):
-    """Represent the JSON quality validation report for VN30 data."""
-
-    model_config = ConfigDict(frozen=True)
-
-    generated_at: datetime
-    source_url: str
-    summary: QualityReportSummary
-    rules: list[QualityRuleResult]

@@ -208,35 +208,57 @@ The application should follow a 3-tier layered structure similar to Spring Boot.
 
 ```text
 project/
-├── src/
-│   ├── config.py
-│   ├── db.py
-│   ├── ingest.py
-│   ├── transform.py
-│   ├── quality_check.py
-│   ├── analytics.py
-│   ├── report.py
-│   ├── schemas.py
-│   └── utils.py
-├── sql/
-│   ├── schema.sql
-│   ├── indexes.sql
-│   └── analytics_queries.sql
-├── output/
-│   ├── data_quality_report.json
-│   └── analytics_output.html
-├── logs/
-│   └── pipeline.log
-├── tests/
-│   ├── test_transform.py
-│   ├── test_quality.py
-│   ├── test_analytics.py
-│   └── test_schemas.py
-├── main.py
-└── README.md
+|-- src/
+|   |-- __init__.py
+|   |-- analytics.py
+|   |-- config.py
+|   |-- db.py
+|   |-- ingest.py
+|   |-- quality_check.py
+|   |-- analytics.py
+|   |-- transform.py
+|   |-- utils.py
+|   |-- controller/
+|   |   `-- analytics_controller.py
+|   |-- models/
+|   |   |-- analytics.py
+|   |   |-- app_config.py
+|   |   |-- quality_rules.py
+|   |   `-- vn30_stock.py
+|   |-- repository/
+|   |   |-- analytics_repository.py
+|   |   `-- vn30_repository.py
+|   |-- service/
+|   |   |-- analytics_service.py
+|   |   `-- vn30_service.py
+|   `-- templates/
+|       `-- report.j2
+|-- scripts/
+|   `-- cli.py
+|-- sql/
+|   |-- analytics_queries.sql
+|   |-- indexes.sql
+|   `-- schema.sql
+|-- output/
+|   |-- data_quality_report.json
+|   `-- report-YYYYmmdd.html
+|-- logs/
+|   `-- pipeline.log
+|-- tests/
+|   |-- test_analytics.py
+|   |-- test_cli_menu.py
+|   |-- test_ingest.py
+|   |-- test_ingest_cli.py
+|   |-- test_pipeline_quality_gate.py
+|   |-- test_quality_check.py
+|   |-- test_report_generation.py
+|   |-- test_report_template.py
+|   `-- test_service_controller.py
+|-- main.py
+|-- README.md
+|-- CONTEXT.md
+`-- AGENTS.md
 ```
-
----
 
 ## Architecture
 
@@ -249,7 +271,7 @@ flowchart TD
     E --> F[quality_check.py]
     E --> G[analytics.py]
     F --> H[data_quality_report.json]
-    G --> I[analytics_output.html]
+    G --> I[report-YYYYmmdd.html]
 ```
 
 ### Processing Flow
@@ -260,7 +282,7 @@ flowchart TD
 4. `db.py` initializes the database using the SQL schema and inserts records.
 5. `quality_check.py` validates the loaded data and writes a JSON report.
 6. `analytics.py` executes SQL queries stored in separate SQL files.
-7. `report.py` renders the final HTML output.
+7. `analytics.py` renders the final HTML output.
 
 ---
 
@@ -307,8 +329,21 @@ python main.py
 After a successful run, the following files should be generated:
 
 - `output/data_quality_report.json`
-- `output/analytics_output.html`
+- `output/report-YYYYmmdd.html`
 - `logs/pipeline.log`
+
+### 3. Run the interactive CLI menu
+
+```bash
+python scripts/cli.py
+```
+
+Menu options:
+
+1. Run full pipeline (quality-gated)
+2. Run quality check using fresh API fetch (no DB write)
+3. Generate analytics report from DB
+4. Exit
 
 ---
 
@@ -330,7 +365,7 @@ Example:
 API_URL = "https://iboard-query.ssi.com.vn/stock/group/VN30"
 DB_PATH = "data/stocks.db"
 QUALITY_REPORT_PATH = "output/data_quality_report.json"
-ANALYTICS_HTML_PATH = "output/analytics_output.html"
+ANALYTICS_HTML_PATH = "output/report-YYYYmmdd.html"
 LOG_PATH = "logs/pipeline.log"
 REQUEST_TIMEOUT = 30
 ```
@@ -593,7 +628,7 @@ volume_ratio = current_volume / nullif(avg_5d_volume, 0)
 The analytics result is rendered into:
 
 ```text
-output/analytics_output.html
+output/report-YYYYmmdd.html
 ```
 
 Suggested contents:
@@ -659,26 +694,37 @@ Preferred behavior:
 
 A lightweight test suite is recommended.
 
-### Suggested tests
+### Current test coverage
 
-- Pydantic schema validation on valid and invalid payloads
-- transformation from normalized model to DB row
-- duplicate detection logic
-- OHLC validation logic
-- analytics query returns expected columns
-- unit testing with `unittest`
-
-Example test files:
-
-- `tests/test_schemas.py`
-- `tests/test_transform.py`
-- `tests/test_quality.py`
+- `tests/test_ingest.py`
+  - HTTP payload parsing, retry behavior, malformed JSON, empty data
+- `tests/test_service_controller.py`
+  - service/controller orchestration and repository idempotency
+- `tests/test_quality_check.py`
+  - quality rule validation and report generation
 - `tests/test_analytics.py`
+  - analytics query results and volume fallback behavior
+- `tests/test_report_generation.py`
+  - report generation end-to-end
+- `tests/test_report_template.py`
+  - template structure validation
+- `tests/test_cli_menu.py`
+  - CLI menu wiring and help output
+- `tests/test_ingest_cli.py`
+  - ingest CLI argument handling
+- `tests/test_pipeline_quality_gate.py`
+  - quality-gated pipeline branching
 
 Run tests with:
 
 ```bash
-unittest
+.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Run one file:
+
+```bash
+.venv\Scripts\python.exe -m unittest tests.test_quality_check -v
 ```
 
 ---
