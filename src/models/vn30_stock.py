@@ -1,4 +1,7 @@
-"""Unified VN30Stock domain models."""
+"""Unified VN30Stock domain models.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
@@ -12,7 +15,10 @@ T = TypeVar("T")
 
 
 class ApiResponse(BaseModel, Generic[T]):
-    """Represent a standard HTTP JSON response envelope from the upstream API."""
+    """Represent a standard HTTP JSON response envelope from the upstream API.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(populate_by_name=True, extra="ignore")
 
@@ -22,7 +28,10 @@ class ApiResponse(BaseModel, Generic[T]):
 
 
 class VN30Record(BaseModel):
-    """Represent the VN30Stock domain record parsed from the API."""
+    """Represent the VN30Stock domain record parsed from the API.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(populate_by_name=True, extra="ignore")
 
@@ -43,27 +52,43 @@ class VN30Record(BaseModel):
     @field_validator("timestamp", mode="before")
     @classmethod
     def parse_epoch_millis(cls, value: Any) -> Any:
-        """Parse epoch millisecond timestamps into timezone-aware datetimes."""
+        """Parse epoch millisecond timestamps into timezone-aware datetimes.
 
+Keyword arguments:
+cls -- The cls.
+value -- The value."""
+
+        # Accept datetime instances as-is.
         if isinstance(value, datetime):
             return value
+        # Convert epoch milliseconds to a UTC datetime.
         return datetime.fromtimestamp(int(value) / 1000, tz=timezone.utc)
 
     @model_validator(mode="after")
     def populate_market_cap(self) -> "VN30Record":
-        """Derive market cap from reference price and stock volume."""
+        """Derive market cap from reference price and stock volume.
 
+Keyword arguments:
+self -- The self."""
+
+        # Populate market cap only when both price and volume are present.
         if self.price is not None and self.volume is not None:
             self.market_cap = self.price * self.volume
         return self
 
 
 class VN30ApiResponse(ApiResponse[list[VN30Record]]):
-    """Represent the VN30 API response envelope with typed quote records."""
+    """Represent the VN30 API response envelope with typed quote records.
+
+Keyword arguments:
+None."""
 
 
 class VN30Row(BaseModel):
-    """Represent a persisted `vn30_stock` DAO row."""
+    """Represent a persisted `vn30_stock` DAO row.
+
+Keyword arguments:
+None."""
 
     timestamp: datetime
     ticker: str
@@ -81,7 +106,10 @@ class VN30Row(BaseModel):
 
 
 class FetchPopulationResult(BaseModel):
-    """Represent the result of a VN30 fetch-and-populate operation."""
+    """Represent the result of a VN30 fetch-and-populate operation.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -95,7 +123,10 @@ class FetchPopulationResult(BaseModel):
 
 
 class PopulationResponse(BaseModel):
-    """Represent the controller response for VN30 database population."""
+    """Represent the controller response for VN30 database population.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(frozen=True)
 

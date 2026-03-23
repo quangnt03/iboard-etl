@@ -1,4 +1,7 @@
-"""HTTP ingestion helpers for VN30 payloads."""
+"""HTTP ingestion helpers for VN30 payloads.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
@@ -26,11 +29,17 @@ from src.utils import get_logger
 
 
 class FetchError(Exception):
-    """Represent a non-recoverable VN30 fetch failure."""
+    """Represent a non-recoverable VN30 fetch failure.
+
+Keyword arguments:
+None."""
 
 
 class VN30Fetcher:
-    """Fetch and validate VN30 data from the configured HTTP endpoint."""
+    """Fetch and validate VN30 data from the configured HTTP endpoint.
+
+Keyword arguments:
+None."""
 
     def __init__(
         self,
@@ -39,7 +48,14 @@ class VN30Fetcher:
         max_retries: int,
         retry_cooldown_seconds: float,
     ) -> None:
-        """Initialize the fetcher runtime settings."""
+        """Initialize the fetcher runtime settings.
+
+Keyword arguments:
+self -- The self.
+api_url -- The api url.
+timeout_seconds -- The timeout seconds.
+max_retries -- The max retries.
+retry_cooldown_seconds -- The retry cooldown seconds."""
 
         self.api_url = api_url
         self.timeout_seconds = timeout_seconds
@@ -50,19 +66,17 @@ class VN30Fetcher:
     def fetch_payload(self) -> dict[str, Any]:
         """Execute an HTTP GET and decode the JSON payload.
 
-        Raises:
-            TimeoutError: If the request times out.
-            error.URLError: If a transport error occurs.
-            error.HTTPError: If the server returns an HTTP error response.
-            FetchError: If the response body is not valid JSON.
-        """
+Keyword arguments:
+self -- The self."""
 
+        # Prepare the HTTP request with a stable user agent for API tracking.
         http_request = request.Request(
             self.api_url,
             headers={"Accept": "application/json", "User-Agent": "finhay-test/1.0"},
             method="GET",
         )
         try:
+            # Read the raw response body as text for JSON decoding.
             with request.urlopen(http_request, timeout=self.timeout_seconds) as response:
                 body = response.read().decode("utf-8")
         except socket.timeout as exc:
@@ -74,7 +88,10 @@ class VN30Fetcher:
                 raise TimeoutError("VN30 API request timed out.") from exc
             self.logger.error("API transport error: source_url=%s error=%s", self.api_url, exc)
             raise
+        except Exception as e:
+            self.logger.error("API internal error: source_url=%s error=%s", self.api_url, exc)
 
+        # Decode the JSON payload and validate its top-level shape.
         try:
             payload = json.loads(body)
         except json.JSONDecodeError as exc:
@@ -89,10 +106,11 @@ class VN30Fetcher:
     def parse_response(self, payload: dict[str, Any]) -> list[VN30Record]:
         """Validate the API payload into typed VN30 records.
 
-        Raises:
-            FetchError: If the payload is invalid or contains unusable data.
-        """
+Keyword arguments:
+self -- The self.
+payload -- The payload."""
 
+        # Validate and normalize API payload with Pydantic schema.
         try:
             response = VN30ApiResponse.model_validate(payload)
         except ValidationError as exc:
@@ -112,8 +130,12 @@ class VN30Fetcher:
         return response.data
 
     def fetch_records(self) -> list[VN30Record]:
-        """Fetch records with retry handling for transient failures."""
+        """Fetch records with retry handling for transient failures.
 
+Keyword arguments:
+self -- The self."""
+
+        # Retry transient failures and log retry attempts for observability.
         last_error: Exception | None = None
         self.logger.info(
             "fetch_records_start source_url=%s max_retries=%s timeout_seconds=%s",
@@ -134,6 +156,7 @@ class VN30Fetcher:
                 return records
             except error.HTTPError as exc:
                 last_error = exc
+                # Retry on rate limit or server errors; fail fast otherwise.
                 if not self._should_retry_http_status(exc.code) or attempt == self.max_retries:
                     raise FetchError(
                         f"VN30 API request failed with HTTP status {exc.code}."
@@ -141,24 +164,59 @@ class VN30Fetcher:
             except (TimeoutError, error.URLError) as exc:
                 last_error = exc
                 if attempt == self.max_retries:
-                    raise FetchError("VN30 API request failed after retries.") from exc
+                    # Emit a distinct message for connection failures on final retry.
+                    if self._is_connection_error(exc):
+                        self.logger.error(
+                            "API connection failed after retries: source_url=%s error=%s",
+                            self.api_url,
+                            exc,
+                        )
+                    message = (
+                        "VN30 API connection failed after retries."
+                        if self._is_connection_error(exc)
+                        else "VN30 API request failed after retries."
+                    )
+                    raise FetchError(message) from exc
             except FetchError:
                 raise
 
+            # Cooldown between retries to reduce pressure on the upstream API.
             time.sleep(self.retry_cooldown_seconds)
 
         raise FetchError("VN30 API request failed.") from last_error
 
     @staticmethod
     def _should_retry_http_status(status_code: int) -> bool:
-        """Return whether an HTTP status should trigger a retry."""
+        """Return whether an HTTP status should trigger a retry.
 
+Keyword arguments:
+status_code -- The status code."""
+
+        # Retry on rate limits and server errors.
         return status_code == HTTPStatus.TOO_MANY_REQUESTS or 500 <= status_code < 600
+
+    @staticmethod
+    def _is_connection_error(exc: Exception) -> bool:
+        """Return whether an exception indicates a connection failure.
+
+Keyword arguments:
+exc -- The exception to inspect.
+"""
+
+        # URLError often wraps socket-level failures; unwrap for classification.
+        if isinstance(exc, error.URLError):
+            reason = exc.reason
+            return isinstance(reason, (ConnectionError, OSError, socket.gaierror, socket.timeout))
+        return isinstance(exc, (ConnectionError, OSError, socket.gaierror, socket.timeout))
 
 
 def create_vn30_fetcher(config: AppConfig = CONFIG) -> VN30Fetcher:
-    """Build the default VN30 fetcher from application config."""
+    """Build the default VN30 fetcher from application config.
 
+Keyword arguments:
+config -- The config."""
+
+    # Construct a fetcher using the centralized app configuration.
     return VN30Fetcher(
         api_url=config.ssi_iboard_endpoint,
         timeout_seconds=config.request_timeout_seconds,
@@ -170,10 +228,10 @@ def create_vn30_fetcher(config: AppConfig = CONFIG) -> VN30Fetcher:
 def build_parser() -> argparse.ArgumentParser:
     """Build the CLI argument parser.
 
-    Returns:
-        Configured ArgumentParser instance.
-    """
+Keyword arguments:
+None."""
 
+    # Provide CLI overrides for API endpoint and retry behavior.
     parser = argparse.ArgumentParser(description="Fetch VN30 records from SSI iBoard API.")
     parser.add_argument("--api-url", default=CONFIG.ssi_iboard_endpoint, help="Override API URL.")
     parser.add_argument(
@@ -220,14 +278,11 @@ def build_parser() -> argparse.ArgumentParser:
 def persist_records(records: list[VN30Record], config: AppConfig) -> int:
     """Persist fetched records to SQLite.
 
-    Args:
-        records: Records to persist.
-        config: Application config providing DB paths.
+Keyword arguments:
+records -- Records to persist.
+config -- Application config providing DB paths."""
 
-    Returns:
-        Number of rows stored.
-    """
-
+    # Initialize the SQLite connection and persist in one step.
     connection_manager = SQLiteConnectionManager(
         database_path=config.database_path,
         schema_path=config.schema_path,
@@ -248,13 +303,10 @@ def persist_records(records: list[VN30Record], config: AppConfig) -> int:
 def main(argv: list[str] | None = None) -> int:
     """Run the ingestion CLI.
 
-    Args:
-        argv: Optional list of CLI arguments.
+Keyword arguments:
+argv -- Optional list of CLI arguments. (default None) (default None)"""
 
-    Returns:
-        Exit code (0 for success, 1 for failure).
-    """
-
+    # Parse CLI arguments and wire a fetcher with overrides.
     parser = build_parser()
     args = parser.parse_args(argv)
 
@@ -269,6 +321,7 @@ def main(argv: list[str] | None = None) -> int:
     fetcher = create_vn30_fetcher(config)
 
     try:
+        # Fetch records from SSI with retry handling.
         records = fetcher.fetch_records()
     except FetchError as exc:
         print(f"Fetch failed: {exc}", file=sys.stderr)
@@ -276,14 +329,17 @@ def main(argv: list[str] | None = None) -> int:
 
     stored_count: int | None = None
     if not args.no_db_write:
+        # Persist records unless explicitly skipped.
         stored_count = persist_records(records, config)
 
     if args.output_json:
+        # Optionally write fetched records to a JSON file for inspection.
         output_payload = [record.model_dump() for record in records]
         with open(args.output_json, "w", encoding="utf-8") as handle:
             json.dump(output_payload, handle, ensure_ascii=False, indent=2)
 
     if not args.quiet:
+        # Print a short stdout summary for CLI users.
         tickers = [record.ticker for record in records[: args.limit]]
         stored_suffix = (
             f" Stored {stored_count} rows to SQLite." if stored_count is not None else ""

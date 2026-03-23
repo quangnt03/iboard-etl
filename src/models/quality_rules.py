@@ -1,4 +1,7 @@
-"""Quality rules for VN30 data checks."""
+"""Quality rules for VN30 data checks.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
@@ -15,7 +18,10 @@ _SAMPLE_LIMIT = 3
 
 
 class QualityRuleResult(BaseModel):
-    """Represent the result of one quality validation rule."""
+    """Represent the result of one quality validation rule.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -30,7 +36,10 @@ class QualityRuleResult(BaseModel):
 
 
 class RunMetadata(BaseModel):
-    """Represent metadata for a quality validation run."""
+    """Represent metadata for a quality validation run.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -43,7 +52,10 @@ class RunMetadata(BaseModel):
 
 
 class QualityReportSummary(BaseModel):
-    """Represent summary statistics for a quality validation run."""
+    """Represent summary statistics for a quality validation run.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -54,7 +66,10 @@ class QualityReportSummary(BaseModel):
 
 
 class QualityReport(BaseModel):
-    """Represent the JSON quality validation report for VN30 data."""
+    """Represent the JSON quality validation report for VN30 data.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -70,15 +85,12 @@ def _sample_violations(
 ) -> list[dict[str, Any]]:
     """Build sample violation dicts.
 
-    Args:
-        violations: Violating records to sample from.
-        builder: Function mapping a record to a sample dict.
-        limit: Maximum number of sample rows to emit.
+Keyword arguments:
+violations -- Violating records to sample from.
+builder -- Function mapping a record to a sample dict.
+limit -- Maximum number of sample rows to emit."""
 
-    Returns:
-        A list of sample violation dictionaries.
-    """
-
+    # Collect a bounded sample of violation details for reporting.
     samples: list[dict[str, Any]] = []
     for record in violations:
         samples.append(builder(record))
@@ -90,19 +102,19 @@ def _sample_violations(
 def _affected_tickers(violations: Iterable[VN30Record]) -> list[str]:
     """Collect unique tickers from violating records.
 
-    Args:
-        violations: Violating records.
+Keyword arguments:
+violations -- Violating records."""
 
-    Returns:
-        Sorted list of unique ticker symbols.
-    """
-
+    # Extract unique ticker symbols for summary reporting.
     tickers = {record.ticker for record in violations if isinstance(record.ticker, str)}
     return sorted(tickers)
 
 
 class QualityRule(ABC):
-    """Base class for extensible VN30 quality rules."""
+    """Base class for extensible VN30 quality rules.
+
+Keyword arguments:
+None."""
 
     rule_name: str
     rule_code: str
@@ -113,16 +125,16 @@ class QualityRule(ABC):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate the provided records and return a rule result.
 
-        Args:
-            records: Records to validate.
-
-        Returns:
-            QualityRuleResult for the rule.
-        """
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
 
 class NonNullPriceRule(QualityRule):
-    """Ensure every record has a non-null price."""
+    """Ensure every record has a non-null price.
+
+Keyword arguments:
+None."""
 
     rule_name = "No NULL prices"
     rule_code = "no_null_prices"
@@ -132,13 +144,11 @@ class NonNullPriceRule(QualityRule):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate non-null prices.
 
-        Args:
-            records: Records to validate.
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
-        Returns:
-            Rule validation result.
-        """
-
+        # Flag records where price is missing.
         violations = [record for record in records if record.price is None]
         return QualityRuleResult(
             rule_name=self.rule_name,
@@ -160,7 +170,10 @@ class NonNullPriceRule(QualityRule):
 
 
 class ChangePctWithinBoundsRule(QualityRule):
-    """Ensure percentage change stays within allowed bounds."""
+    """Ensure percentage change stays within allowed bounds.
+
+Keyword arguments:
+None."""
 
     rule_name = "Price change within bounds"
     rule_code = "price_change_within_bounds"
@@ -170,13 +183,11 @@ class ChangePctWithinBoundsRule(QualityRule):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate change percentage bounds.
 
-        Args:
-            records: Records to validate.
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
-        Returns:
-            Rule validation result.
-        """
-
+        # Flag records where change_pct falls outside the allowed range.
         violations = [
             record
             for record in records
@@ -202,7 +213,10 @@ class ChangePctWithinBoundsRule(QualityRule):
 
 
 class PositiveVolumeDuringTradingHoursRule(QualityRule):
-    """Ensure positive volume during ICT trading hours."""
+    """Ensure positive volume during ICT trading hours.
+
+Keyword arguments:
+None."""
 
     rule_name = "Volume positivity"
     rule_code = "volume_positivity"
@@ -212,13 +226,11 @@ class PositiveVolumeDuringTradingHoursRule(QualityRule):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate positive volume during ICT trading hours.
 
-        Args:
-            records: Records to validate.
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
-        Returns:
-            Rule validation result.
-        """
-
+        # Scan records for zero/negative volume during trading hours.
         violations: list[VN30Record] = []
         for record in records:
             local_time = record.timestamp.astimezone(ICT).time()
@@ -246,7 +258,10 @@ class PositiveVolumeDuringTradingHoursRule(QualityRule):
 
 
 class NumericNonNegativeRule(QualityRule):
-    """Ensure numeric fields are non-negative."""
+    """Ensure numeric fields are non-negative.
+
+Keyword arguments:
+None."""
 
     rule_name = "All numeric fields non-negative"
     rule_code = "numeric_fields_non_negative"
@@ -266,13 +281,11 @@ class NumericNonNegativeRule(QualityRule):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate non-negative numeric fields.
 
-        Args:
-            records: Records to validate.
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
-        Returns:
-            Rule validation result.
-        """
-
+        # Accumulate records with any negative numeric field.
         violations: list[VN30Record] = []
         sample_violations: list[dict[str, Any]] = []
         for record in records:
@@ -304,7 +317,10 @@ class NumericNonNegativeRule(QualityRule):
 
 
 class LowLessThanHighRule(QualityRule):
-    """Ensure low price is less than or equal to high price."""
+    """Ensure low price is less than or equal to high price.
+
+Keyword arguments:
+None."""
 
     rule_name = "Low <= High"
     rule_code = "low_lte_high"
@@ -314,13 +330,11 @@ class LowLessThanHighRule(QualityRule):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate low <= high.
 
-        Args:
-            records: Records to validate.
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
-        Returns:
-            Rule validation result.
-        """
-
+        # Flag records where low exceeds high.
         violations = [
             record
             for record in records
@@ -347,7 +361,10 @@ class LowLessThanHighRule(QualityRule):
 
 
 class OpenWithinRangeRule(QualityRule):
-    """Ensure open price is within the low/high range."""
+    """Ensure open price is within the low/high range.
+
+Keyword arguments:
+None."""
 
     rule_name = "Open within range"
     rule_code = "open_within_range"
@@ -357,13 +374,11 @@ class OpenWithinRangeRule(QualityRule):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate open within [low, high].
 
-        Args:
-            records: Records to validate.
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
-        Returns:
-            Rule validation result.
-        """
-
+        # Flag records where open is outside the low/high range.
         violations = [
             record
             for record in records
@@ -394,7 +409,10 @@ class OpenWithinRangeRule(QualityRule):
 
 
 class CloseWithinRangeRule(QualityRule):
-    """Ensure close price is within the low/high range."""
+    """Ensure close price is within the low/high range.
+
+Keyword arguments:
+None."""
 
     rule_name = "Close within range"
     rule_code = "close_within_range"
@@ -404,13 +422,11 @@ class CloseWithinRangeRule(QualityRule):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate close within [low, high].
 
-        Args:
-            records: Records to validate.
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
-        Returns:
-            Rule validation result.
-        """
-
+        # Flag records where close is outside the low/high range.
         violations = [
             record
             for record in records
@@ -441,7 +457,10 @@ class CloseWithinRangeRule(QualityRule):
 
 
 class PriceWithinRangeRule(QualityRule):
-    """Ensure price is within the low/high range."""
+    """Ensure price is within the low/high range.
+
+Keyword arguments:
+None."""
 
     rule_name = "Price within range"
     rule_code = "price_within_range"
@@ -451,13 +470,11 @@ class PriceWithinRangeRule(QualityRule):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate price within [low, high].
 
-        Args:
-            records: Records to validate.
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
-        Returns:
-            Rule validation result.
-        """
-
+        # Flag records where price is outside the low/high range.
         violations = [
             record
             for record in records
@@ -488,7 +505,10 @@ class PriceWithinRangeRule(QualityRule):
 
 
 class AvgWithinRangeRule(QualityRule):
-    """Ensure average price is within the low/high range."""
+    """Ensure average price is within the low/high range.
+
+Keyword arguments:
+None."""
 
     rule_name = "Average within range"
     rule_code = "avg_within_range"
@@ -498,13 +518,11 @@ class AvgWithinRangeRule(QualityRule):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate average within [low, high].
 
-        Args:
-            records: Records to validate.
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
-        Returns:
-            Rule validation result.
-        """
-
+        # Flag records where avg is outside the low/high range.
         violations = [
             record
             for record in records
@@ -535,7 +553,10 @@ class AvgWithinRangeRule(QualityRule):
 
 
 class TickerNotBlankRule(QualityRule):
-    """Ensure ticker is not blank."""
+    """Ensure ticker is not blank.
+
+Keyword arguments:
+None."""
 
     rule_name = "Ticker not blank"
     rule_code = "ticker_not_blank"
@@ -545,13 +566,11 @@ class TickerNotBlankRule(QualityRule):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate non-blank tickers.
 
-        Args:
-            records: Records to validate.
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
-        Returns:
-            Rule validation result.
-        """
-
+        # Flag records with missing or blank ticker symbols.
         violations = [
             record
             for record in records
@@ -576,7 +595,10 @@ class TickerNotBlankRule(QualityRule):
 
 
 class TimestampParseableRule(QualityRule):
-    """Ensure timestamp is a datetime instance."""
+    """Ensure timestamp is a datetime instance.
+
+Keyword arguments:
+None."""
 
     rule_name = "Timestamp parseable"
     rule_code = "timestamp_parseable"
@@ -586,13 +608,11 @@ class TimestampParseableRule(QualityRule):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate timestamp type.
 
-        Args:
-            records: Records to validate.
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
-        Returns:
-            Rule validation result.
-        """
-
+        # Flag records with non-datetime timestamps.
         violations = [
             record for record in records if not isinstance(record.timestamp, datetime)
         ]
@@ -615,7 +635,10 @@ class TimestampParseableRule(QualityRule):
 
 
 class VolumeNonNegativeRule(QualityRule):
-    """Ensure volume is non-negative."""
+    """Ensure volume is non-negative.
+
+Keyword arguments:
+None."""
 
     rule_name = "Volume non-negative"
     rule_code = "volume_non_negative"
@@ -625,13 +648,11 @@ class VolumeNonNegativeRule(QualityRule):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate volume >= 0.
 
-        Args:
-            records: Records to validate.
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
-        Returns:
-            Rule validation result.
-        """
-
+        # Flag records with missing or negative volume.
         violations = [
             record
             for record in records
@@ -657,7 +678,10 @@ class VolumeNonNegativeRule(QualityRule):
 
 
 class MarketCapNonNegativeRule(QualityRule):
-    """Ensure market cap is non-negative."""
+    """Ensure market cap is non-negative.
+
+Keyword arguments:
+None."""
 
     rule_name = "Market cap non-negative"
     rule_code = "market_cap_non_negative"
@@ -667,13 +691,11 @@ class MarketCapNonNegativeRule(QualityRule):
     def validate(self, records: list[VN30Record]) -> QualityRuleResult:
         """Validate market cap >= 0.
 
-        Args:
-            records: Records to validate.
+Keyword arguments:
+self -- The self.
+records -- Records to validate."""
 
-        Returns:
-            Rule validation result.
-        """
-
+        # Flag records with missing or negative market cap.
         violations = [
             record
             for record in records

@@ -1,4 +1,7 @@
-"""Report generation entrypoint."""
+"""Report generation entrypoint.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
@@ -21,17 +24,16 @@ from src.utils import get_logger
 def generate_report(output_path: Path | None = None) -> ReportResult:
     """Generate the analytics report via the controller.
 
-    Args:
-        output_path: Optional override for the output file path.
+Keyword arguments:
+output_path -- Optional override for the output file path. (default None) (default None)"""
 
-    Returns:
-        ReportResult metadata for the generated report.
-    """
-
+    # Use the shared logger to trace report generation steps.
     logger = get_logger(CONFIG.log_path)
     logger.info("analytics_report_start output_path=%s", output_path or "default")
+    # Delegate to the controller to execute SQL and render the report.
     controller = create_analytics_controller()
     result = controller.generate_report(output_path)
+    # Log the final output and row count for observability.
     logger.info(
         "analytics_report_complete output_path=%s rows=%s",
         result.output_path,
@@ -43,10 +45,10 @@ def generate_report(output_path: Path | None = None) -> ReportResult:
 def build_parser() -> argparse.ArgumentParser:
     """Build the CLI argument parser.
 
-    Returns:
-        Configured ArgumentParser instance.
-    """
+Keyword arguments:
+None."""
 
+    # Define CLI flags for report output and verbosity.
     parser = argparse.ArgumentParser(description="Generate the VN30 analytics report.")
     parser.add_argument(
         "--output-path",
@@ -63,13 +65,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     """Run the report generation CLI.
 
-    Args:
-        argv: Optional list of CLI arguments.
+Keyword arguments:
+argv -- Optional list of CLI arguments. (default None) (default None)"""
 
-    Returns:
-        Exit code (0 for success).
-    """
-
+    # Parse CLI args and select an output path.
     parser = build_parser()
     args = parser.parse_args(argv)
     logger = get_logger(CONFIG.log_path)
@@ -77,11 +76,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.output_path:
         output_path = Path(args.output_path)
     else:
+        # Default to a date-stamped HTML file in the report directory.
         output_path = (
             CONFIG.report_output_dir
             / f"report-{datetime.now().strftime('%Y%m%d')}.html"
         )
 
+    # Generate the report and print a summary unless quiet.
     result = generate_report(output_path)
     if not args.quiet:
         print(f"Report generated: {result.output_path} (rows={result.row_count})")

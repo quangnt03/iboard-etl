@@ -1,1 +1,4 @@
-"""CLI scripts package."""
+"""CLI scripts package.
+
+Keyword arguments:
+None."""

@@ -1,3 +1,8 @@
+"""Unit tests for analytics SQL queries.
+
+Keyword arguments:
+None."""
+
 import re
 import sqlite3
 import unittest
@@ -7,13 +12,9 @@ from typing import Iterable, List, Tuple
 def _load_named_query(sql_path: str, name: str) -> str:
     """Load a named SQL query from a file using `-- name: <name>` markers.
 
-    Args:
-        sql_path: Path to the SQL file.
-        name: Named query identifier.
-
-    Returns:
-        The SQL query string.
-    """
+Keyword arguments:
+sql_path -- Path to the SQL file.
+name -- Named query identifier."""
     with open(sql_path, "r", encoding="utf-8") as handle:
         content = handle.read()
     pattern = rf"-- name:\s*{re.escape(name)}\s*(.*?;)"
@@ -26,10 +27,9 @@ def _load_named_query(sql_path: str, name: str) -> str:
 def _seed_rows(cursor: sqlite3.Cursor, rows: Iterable[Tuple[str, str, float, float, float]]) -> None:
     """Insert minimal rows for analytics testing.
 
-    Args:
-        cursor: SQLite cursor for inserts.
-        rows: Row tuples of (timestamp, ticker, open, high, low).
-    """
+Keyword arguments:
+cursor -- SQLite cursor for inserts.
+rows -- Row tuples of (timestamp, ticker, open, high, low)."""
     cursor.executemany(
         """
         INSERT INTO vn30_stock (timestamp, ticker, open, high, low)
@@ -42,9 +42,8 @@ def _seed_rows(cursor: sqlite3.Cursor, rows: Iterable[Tuple[str, str, float, flo
 def _setup_db() -> sqlite3.Connection:
     """Create an in-memory SQLite database with the minimal schema.
 
-    Returns:
-        A SQLite connection instance.
-    """
+Keyword arguments:
+None."""
     connection = sqlite3.connect(":memory:")
     cursor = connection.cursor()
     cursor.execute(
@@ -64,10 +63,16 @@ def _setup_db() -> sqlite3.Connection:
 
 
 class TestAnalyticsQueries(unittest.TestCase):
-    """Unit tests for analytics SQL queries."""
+    """Unit tests for analytics SQL queries.
+
+Keyword arguments:
+None."""
 
     def test_intraday_volatility_today_query_orders_by_latest_day(self) -> None:
-        """Verify intraday volatility query uses the latest trade date and orders desc."""
+        """Verify intraday volatility query uses the latest trade date and orders desc.
+
+Keyword arguments:
+self -- The self."""
         connection = _setup_db()
         cursor = connection.cursor()
         _seed_rows(
@@ -97,7 +102,10 @@ class TestAnalyticsQueries(unittest.TestCase):
         connection.close()
 
     def test_volume_vs_5d_avg_query(self) -> None:
-        """Verify 5-day average volume and ratio are computed for latest day."""
+        """Verify 5-day average volume and ratio are computed for latest day.
+
+Keyword arguments:
+self -- The self."""
         connection = _setup_db()
         cursor = connection.cursor()
         cursor.execute("ALTER TABLE vn30_stock ADD COLUMN volume INTEGER;")
@@ -137,7 +145,10 @@ class TestAnalyticsQueries(unittest.TestCase):
         connection.close()
 
     def test_volume_vs_5d_avg_fallback_single_day(self) -> None:
-        """Fallback to today's volume when 5-day history is unavailable."""
+        """Fallback to today's volume when 5-day history is unavailable.
+
+Keyword arguments:
+self -- The self."""
         connection = _setup_db()
         cursor = connection.cursor()
         cursor.execute("ALTER TABLE vn30_stock ADD COLUMN volume INTEGER;")

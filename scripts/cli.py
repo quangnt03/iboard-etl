@@ -1,4 +1,7 @@
-"""Interactive CLI menu for VN30 pipeline operations."""
+"""Interactive CLI menu for VN30 pipeline operations.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
@@ -21,7 +24,10 @@ from scripts.pipeline import run_pipeline  # noqa: E402
 
 @dataclass(frozen=True)
 class MenuAction:
-    """Represent a CLI menu action."""
+    """Represent a CLI menu action.
+
+Keyword arguments:
+None."""
 
     key: str
     description: str
@@ -31,24 +37,21 @@ class MenuAction:
 def build_parser() -> argparse.ArgumentParser:
     """Build CLI argument parser.
 
-    Returns:
-        ArgumentParser instance.
-    """
+Keyword arguments:
+None."""
 
+    # CLI entrypoint has no flags; parser exists for consistency.
     return argparse.ArgumentParser(description="Interactive CLI for VN30 pipeline actions.")
 
 
 def prompt_yes_no(message: str, default: bool = True) -> bool:
     """Prompt for a yes/no response.
 
-    Args:
-        message: Prompt message.
-        default: Default value when user presses enter.
+Keyword arguments:
+message -- Prompt message.
+default -- Default value when user presses enter. (default True) (default True)"""
 
-    Returns:
-        Boolean user choice.
-    """
-
+    # Render a prompt suffix that reflects the default choice.
     suffix = " [Y/n]: " if default else " [y/N]: "
     while True:
         response = input(message + suffix).strip().lower()
@@ -64,22 +67,24 @@ def prompt_yes_no(message: str, default: bool = True) -> bool:
 def prompt_text(message: str, default: str | None = None) -> str | None:
     """Prompt for optional text input.
 
-    Args:
-        message: Prompt message.
-        default: Default value when user presses enter.
+Keyword arguments:
+message -- Prompt message.
+default -- Default value when user presses enter. (default None) (default None)"""
 
-    Returns:
-        User input or default.
-    """
-
+    # Include the default in the prompt when provided.
     suffix = f" [{default}]: " if default else ": "
     response = input(message + suffix).strip()
     return response or default
 
 
 def prompt_float(message: str, default: float) -> float:
-    """Prompt for float input with default."""
+    """Prompt for float input with default.
 
+Keyword arguments:
+message -- The message.
+default -- The default."""
+
+    # Loop until we get a valid float or accept the default.
     while True:
         response = input(f"{message} [{default}]: ").strip()
         if not response:
@@ -91,8 +96,13 @@ def prompt_float(message: str, default: float) -> float:
 
 
 def prompt_int(message: str, default: int) -> int:
-    """Prompt for integer input with default."""
+    """Prompt for integer input with default.
 
+Keyword arguments:
+message -- The message.
+default -- The default."""
+
+    # Loop until we get a valid integer or accept the default.
     while True:
         response = input(f"{message} [{default}]: ").strip()
         if not response:
@@ -104,12 +114,17 @@ def prompt_int(message: str, default: int) -> int:
 
 
 def build_config_overrides() -> AppConfig:
-    """Prompt for optional overrides and return updated config."""
+    """Prompt for optional overrides and return updated config.
 
+Keyword arguments:
+None."""
+
+    # Allow user to override API settings interactively.
     use_defaults = prompt_yes_no("Use default API settings?", default=True)
     if use_defaults:
         return CONFIG
 
+    # Collect override values for the API fetcher.
     api_url = prompt_text("API URL", default=CONFIG.ssi_iboard_endpoint)
     timeout_seconds = prompt_float("Timeout (seconds)", CONFIG.request_timeout_seconds)
     max_retries = prompt_int("Max retries", CONFIG.max_retries)
@@ -125,8 +140,12 @@ def build_config_overrides() -> AppConfig:
 
 
 def action_run_pipeline() -> None:
-    """Run the full pipeline with quality gating."""
+    """Run the full pipeline with quality gating.
 
+Keyword arguments:
+None."""
+
+    # Execute the main pipeline and print a summary.
     config = build_config_overrides()
     result = run_pipeline(config)
     print(
@@ -140,8 +159,12 @@ def action_run_pipeline() -> None:
 
 
 def action_quality_check() -> None:
-    """Fetch records and run quality checks without DB writes."""
+    """Fetch records and run quality checks without DB writes.
 
+Keyword arguments:
+None."""
+
+    # Fetch records and run the quality checks without persisting to SQLite.
     config = build_config_overrides()
     report_dir_input = prompt_text("Report directory", default=str(CONFIG.log_path.parent))
     report_directory = Path(report_dir_input) if report_dir_input else CONFIG.log_path.parent
@@ -153,6 +176,7 @@ def action_quality_check() -> None:
         print(f"Fetch failed: {exc}")
         return
 
+    # Write the quality report to the requested directory.
     checker = VN30QualityChecker(report_directory=report_directory)
     report, report_path = checker.validate_and_write(records, fetcher.api_url)
     total_violations = sum(check.violation_count for check in report.checks)
@@ -164,13 +188,18 @@ def action_quality_check() -> None:
 
 
 def action_fetch_records() -> None:
-    """Fetch records and optionally persist them to SQLite."""
+    """Fetch records and optionally persist them to SQLite.
 
+Keyword arguments:
+None."""
+
+    # Fetch records and optionally write them to SQLite.
     config = build_config_overrides()
     skip_db_write = prompt_yes_no("Skip SQLite write?", default=False)
     fetcher = create_vn30_fetcher(config)
     try:
         records = fetcher.fetch_records()
+        print(records)
     except FetchError as exc:
         print(f"Fetch failed: {exc}")
         return
@@ -186,8 +215,12 @@ def action_fetch_records() -> None:
 
 
 def action_generate_report() -> None:
-    """Generate the analytics report from DB."""
+    """Generate the analytics report from DB.
 
+Keyword arguments:
+None."""
+
+    # Prompt for the output path and generate the report.
     output_default = (
         CONFIG.report_output_dir
         / f"report-{datetime.now().strftime('%Y%m%d')}.html"
@@ -199,14 +232,22 @@ def action_generate_report() -> None:
 
 
 def action_exit() -> None:
-    """Exit the CLI."""
+    """Exit the CLI.
 
+Keyword arguments:
+None."""
+
+    # Exit handler keeps the menu loop simple.
     print("Exiting.")
 
 
 def get_menu_actions() -> list[MenuAction]:
-    """Return menu actions in order."""
+    """Return menu actions in order.
 
+Keyword arguments:
+None."""
+
+    # Keep menu order stable for user expectations.
     return [
         MenuAction("1", "Run full pipeline", action_run_pipeline),
         MenuAction("2", "Fetch records (optional DB write)", action_fetch_records),
@@ -217,8 +258,12 @@ def get_menu_actions() -> list[MenuAction]:
 
 
 def run_menu() -> None:
-    """Run the interactive menu loop."""
+    """Run the interactive menu loop.
 
+Keyword arguments:
+None."""
+
+    # Build lookup map and loop until exit action is selected.
     actions = {action.key: action for action in get_menu_actions()}
     while True:
         print("\nVN30 CLI Menu")
@@ -229,14 +274,19 @@ def run_menu() -> None:
         if not action:
             print("Invalid selection. Try again.")
             continue
+        # Execute the selected handler.
         action.handler()
         if action.key == "5":
             break
 
 
 def main(argv: list[str] | None = None) -> int:
-    """CLI entrypoint."""
+    """CLI entrypoint.
 
+Keyword arguments:
+argv -- (default None) (default None)"""
+
+    # Parse arguments and run the interactive menu.
     parser = build_parser()
     parser.parse_args(argv)
     run_menu()

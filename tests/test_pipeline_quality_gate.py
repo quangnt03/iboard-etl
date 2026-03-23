@@ -1,3 +1,8 @@
+"""Unit tests for the pipeline quality gate branching logic.
+
+Keyword arguments:
+None."""
+
 import json
 import shutil
 import sqlite3
@@ -9,9 +14,16 @@ from main import run_pipeline
 
 
 class TestPipelineQualityGate(unittest.TestCase):
-    """Tests for quality-gated pipeline behavior."""
+    """Tests for quality-gated pipeline behavior.
+
+Keyword arguments:
+None."""
 
     def setUp(self) -> None:
+        """Create a temporary working directory and subfolders.
+
+Keyword arguments:
+self -- The self."""
         self.base_dir = Path("artifacts") / "tmp_quality_gate"
         self.logs_dir = self.base_dir / "logs"
         self.output_dir = self.base_dir / "output"
@@ -20,9 +32,17 @@ class TestPipelineQualityGate(unittest.TestCase):
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def tearDown(self) -> None:
+        """Clean up any temporary files created during tests.
+
+Keyword arguments:
+self -- The self."""
         shutil.rmtree(self.base_dir, ignore_errors=True)
 
     def _seed_db(self) -> None:
+        """Seed a minimal VN30 table with a single record.
+
+Keyword arguments:
+self -- The self."""
         connection = sqlite3.connect(self.db_path)
         cursor = connection.cursor()
         cursor.execute(
@@ -83,6 +103,12 @@ class TestPipelineQualityGate(unittest.TestCase):
         connection.close()
 
     def _write_report(self, failed_rules: int, total_violations: int) -> Path:
+        """Write a quality report fixture and return its path.
+
+Keyword arguments:
+self -- The self.
+failed_rules -- The failed rules.
+total_violations -- The total violations."""
         path = self.logs_dir / "quality_report_check_2026-03-20.json"
         total_rules = 1
         passed_rules = total_rules - failed_rules
@@ -119,6 +145,10 @@ class TestPipelineQualityGate(unittest.TestCase):
         return path
 
     def test_clean_report_uses_db_branch(self) -> None:
+        """Use DB branch when the quality report passes.
+
+Keyword arguments:
+self -- The self."""
         self._seed_db()
         self._write_report(0, 0)
         config = CONFIG.model_copy(
@@ -133,6 +163,10 @@ class TestPipelineQualityGate(unittest.TestCase):
         self.assertTrue(result.analytics_report_path and result.analytics_report_path.exists())
 
     def test_missing_report_refetches(self) -> None:
+        """Refetch data when the quality report is missing.
+
+Keyword arguments:
+self -- The self."""
         self._seed_db()
         config = CONFIG.model_copy(
             update={
@@ -145,6 +179,10 @@ class TestPipelineQualityGate(unittest.TestCase):
         self.assertEqual(result.branch, "refetch_then_report")
 
     def test_failed_report_refetches(self) -> None:
+        """Refetch data when the quality report indicates failure.
+
+Keyword arguments:
+self -- The self."""
         self._seed_db()
         self._write_report(1, 2)
         config = CONFIG.model_copy(

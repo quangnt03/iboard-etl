@@ -1,4 +1,7 @@
-"""Post-retrieval quality checks for VN30 data."""
+"""Post-retrieval quality checks for VN30 data.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
@@ -44,11 +47,20 @@ from src.utils import get_logger
 ICT = timezone(timedelta(hours=7))
 
 class VN30QualityChecker:
-    """Run VN30 post-retrieval quality validation and write JSON reports."""
+    """Run VN30 post-retrieval quality validation and write JSON reports.
+
+Keyword arguments:
+None."""
 
     def __init__(self, report_directory: Path, rules: list[QualityRule] | None = None) -> None:
-        """Initialize the quality checker."""
+        """Initialize the quality checker.
 
+Keyword arguments:
+self -- The self.
+report_directory -- The report directory.
+rules -- (default None) (default None)"""
+
+        # Store report destination and initialize rule set.
         self.report_directory = report_directory
         self.logger = get_logger(CONFIG.log_path)
         self.rules = rules or [
@@ -68,8 +80,14 @@ class VN30QualityChecker:
         ]
 
     def build_report(self, records: list[VN30Record], source_url: str) -> QualityReport:
-        """Build a Pydantic quality report from VN30 records."""
+        """Build a Pydantic quality report from VN30 records.
 
+Keyword arguments:
+self -- The self.
+records -- The records.
+source_url -- The source url."""
+
+        # Only validate the latest batch to avoid duplicate historical checks.
         records = _latest_batch(records)
         rule_results = [rule.validate(records) for rule in self.rules]
         passed_rules = sum(1 for result in rule_results if result.status == "pass")
@@ -95,22 +113,37 @@ class VN30QualityChecker:
         )
 
     def report_path(self) -> Path:
-        """Return the daily JSON report path."""
+        """Return the daily JSON report path.
 
+Keyword arguments:
+self -- The self."""
+
+        # Use a date-stamped filename for daily reports.
         report_date = datetime.now(tz=ICT).strftime("%Y-%m-%d")
         return self.report_directory / f"quality_report_check_{report_date}.json"
 
     def write_report(self, report: QualityReport) -> Path:
-        """Write the quality report to disk."""
+        """Write the quality report to disk.
 
+Keyword arguments:
+self -- The self.
+report -- The report."""
+
+        # Persist the quality report JSON to disk.
         output_path = self.report_path()
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
         return output_path
 
     def validate_and_write(self, records: list[VN30Record], source_url: str) -> tuple[QualityReport, Path]:
-        """Validate records and write the daily JSON report."""
+        """Validate records and write the daily JSON report.
 
+Keyword arguments:
+self -- The self.
+records -- The records.
+source_url -- The source url."""
+
+        # Log start/end for observability and tracing.
         self.logger.info(
             "quality_check_start source_url=%s records=%s report_dir=%s",
             source_url,
@@ -130,17 +163,28 @@ class VN30QualityChecker:
 
 
 def _latest_batch(records: list[VN30Record]) -> list[VN30Record]:
-    """Select the latest batch of records using updated_at or timestamp."""
+    """Select the latest batch of records using updated_at or timestamp.
 
+Keyword arguments:
+records -- The records."""
+
+    # Guard against empty input to avoid max() errors.
     if not records:
         return records
 
     def batch_key(record: VN30Record) -> datetime:
+        """Return the timestamp used to identify the latest batch.
+
+Keyword arguments:
+record -- The record."""
+        # Prefer updated_at when present; fall back to timestamp.
         value = record.updated_at or record.timestamp
         if value.tzinfo is None:
+            # Normalize to UTC to keep comparisons stable.
             value = value.replace(tzinfo=timezone.utc)
         return value.replace(microsecond=0)
 
+    # Filter to the most recent batch using the normalized timestamp key.
     latest = max(batch_key(record) for record in records)
     return [record for record in records if batch_key(record) == latest]
 
@@ -148,10 +192,10 @@ def _latest_batch(records: list[VN30Record]) -> list[VN30Record]:
 def build_parser() -> argparse.ArgumentParser:
     """Build the CLI argument parser.
 
-    Returns:
-        Configured ArgumentParser instance.
-    """
+Keyword arguments:
+None."""
 
+    # Provide CLI flags for API overrides and report output directory.
     parser = argparse.ArgumentParser(description="Run VN30 data quality checks.")
     parser.add_argument("--api-url", default=CONFIG.ssi_iboard_endpoint, help="Override API URL.")
     parser.add_argument(
@@ -188,13 +232,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     """Run the quality check CLI.
 
-    Args:
-        argv: Optional list of CLI arguments.
+Keyword arguments:
+argv -- Optional list of CLI arguments. (default None) (default None)"""
 
-    Returns:
-        Exit code (0 for success, 1 for failure).
-    """
-
+    # Parse CLI arguments and execute a quality check run.
     parser = build_parser()
     args = parser.parse_args(argv)
     logger = get_logger(CONFIG.log_path)
@@ -207,15 +248,18 @@ def main(argv: list[str] | None = None) -> int:
             "retry_cooldown_seconds": args.retry_cooldown_seconds,
         }
     )
+    # Fetch records from SSI before running validations.
     fetcher = create_vn30_fetcher(config)
 
     try:
         records = fetcher.fetch_records()
     except FetchError as exc:
+        # Log fetch failure for observability and exit non-zero.
         logger.error("quality_check_fetch_failed source_url=%s error=%s", fetcher.api_url, exc)
         print(f"Fetch failed: {exc}", file=sys.stderr)
         return 1
 
+    # Validate records and write the report to disk.
     report_directory = Path(args.report_dir)
     checker = VN30QualityChecker(report_directory=report_directory)
     report, report_path = checker.validate_and_write(records, fetcher.api_url)
@@ -227,6 +271,7 @@ def main(argv: list[str] | None = None) -> int:
             f"(failed_rules={report.summary.failed_rules}, "
             f"violations={total_violations})"
         )
+    # Log CLI completion with summary details.
     logger.info(
         "quality_check_cli_complete report_path=%s failed_rules=%s violations=%s",
         report_path,

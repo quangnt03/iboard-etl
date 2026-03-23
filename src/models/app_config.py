@@ -1,4 +1,7 @@
-"""Pydantic model for application configuration."""
+"""Pydantic model for application configuration.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
@@ -10,21 +13,8 @@ from pydantic import BaseModel, ConfigDict
 class AppConfig(BaseModel):
     """Store runtime configuration for the pipeline.
 
-    Attributes:
-        ssi_iboard_endpoint: Source API endpoint for VN30 quotes.
-        database_path: SQLite database file path.
-        schema_path: SQL schema file path used to initialize the database.
-        analytics_sql_path: SQL file containing analytics queries.
-        report_template_path: Jinja template path for HTML report.
-        report_output_dir: Directory for generated HTML reports.
-        request_timeout_seconds: HTTP timeout for the VN30 endpoint.
-        max_retries: Maximum number of fetch attempts for transient failures.
-        retry_cooldown_seconds: Delay between retry attempts.
-        log_path: Application log file path.
-        vnstock_api_key: Optional API key for vnstock.
-        use_vnstock_fallback: Whether to use VnStock fallback for volume history.
-        persist_vnstock_fallback: Whether to persist VnStock fallback rows to SQLite.
-    """
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(frozen=True)
 

@@ -1,4 +1,7 @@
-"""Application configuration loader."""
+"""Application configuration loader.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
@@ -9,18 +12,25 @@ from dotenv import find_dotenv, load_dotenv
 
 from src.models.app_config import AppConfig
 
+# Load local environment overrides before building the app config.
 load_dotenv(find_dotenv(filename=".env.local"))
 
 
 def _parse_bool(value: str | None, default: bool) -> bool:
-    """Parse a truthy env var string into a boolean."""
+    """Parse a truthy env var string into a boolean.
 
+Keyword arguments:
+value -- The value.
+default -- The default."""
+
+    # Fall back to the provided default when the env var is missing.
     if value is None:
         return default
     normalized = value.strip().lower()
     return normalized in {"1", "true", "yes", "y", "on"}
 
 
+# Build the canonical application config from environment variables.
 CONFIG = AppConfig(
     ssi_iboard_endpoint=os.getenv("BASE_URL", "https://iboard-query.ssi.com.vn/stock/group/VN30"),
     database_path=Path(os.getenv("DB_PATH", "data/stocks.db")),

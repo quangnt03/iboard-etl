@@ -1,4 +1,7 @@
-"""Controller layer for analytics reporting."""
+"""Controller layer for analytics reporting.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
@@ -11,29 +14,38 @@ from src.service.analytics_service import AnalyticsService
 
 
 class AnalyticsController:
-    """Expose analytics reporting operations."""
+    """Expose analytics reporting operations.
+
+Keyword arguments:
+None."""
 
     def __init__(self, service: AnalyticsService) -> None:
-        """Initialize the controller."""
+        """Initialize the controller.
+
+Keyword arguments:
+self -- The self.
+service -- The service."""
 
         self.service = service
 
     def generate_report(self, output_path: Path | None = None) -> ReportResult:
         """Generate the HTML analytics report.
 
-        Args:
-            output_path: Optional override for the output file path.
+Keyword arguments:
+self -- The self.
+output_path -- Optional override for the output file path. (default None) (default None)"""
 
-        Returns:
-            ReportResult metadata for the generated report.
-        """
-
+        # Delegate report generation to the service layer.
         return self.service.generate_report(output_path)
 
 
 def create_analytics_controller() -> AnalyticsController:
-    """Build the default analytics controller graph."""
+    """Build the default analytics controller graph.
 
+Keyword arguments:
+None."""
+
+    # Wire repository and service with config-driven settings.
     repository = create_analytics_repository(CONFIG.analytics_sql_path)
     service = AnalyticsService(
         repository,

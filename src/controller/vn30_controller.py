@@ -1,4 +1,7 @@
-"""Controller layer for VN30 population interfaces."""
+"""Controller layer for VN30 population interfaces.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
@@ -11,17 +14,28 @@ from src.utils import get_logger
 
 
 class VN30Controller:
-    """Expose VN30 population operations to the application entrypoint."""
+    """Expose VN30 population operations to the application entrypoint.
+
+Keyword arguments:
+None."""
 
     def __init__(self, service: VN30Service) -> None:
-        """Initialize the controller."""
+        """Initialize the controller.
+
+Keyword arguments:
+self -- The self.
+service -- The service."""
 
         self.service = service
         self.logger = get_logger(CONFIG.log_path)
 
     def fetch_and_populate(self) -> PopulationResponse:
-        """Fetch data from the API and populate the database."""
+        """Fetch data from the API and populate the database.
 
+Keyword arguments:
+self -- The self."""
+
+        # Orchestrate the fetch+persist workflow through the service layer.
         result: FetchPopulationResult = self.service.populate_from_api()
         self.logger.info(
             "source_url=%s success=%s rows_loaded=%s rows_stored=%s quality_passed=%s quality_report_path=%s message=%s",
@@ -46,8 +60,12 @@ class VN30Controller:
 
 
 def create_vn30_controller() -> VN30Controller:
-    """Build the default VN30 controller graph."""
+    """Build the default VN30 controller wrapper.
 
+Keyword arguments:
+None."""
+
+    # Wire repository, fetcher, and quality checker for the VN30 service.
     repository = create_vn30_repository()
     fetcher = create_vn30_fetcher()
     from src.quality_check import VN30QualityChecker

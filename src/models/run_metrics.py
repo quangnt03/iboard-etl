@@ -1,4 +1,7 @@
-"""Run metrics models for daily pipeline execution logs."""
+"""Run metrics models for daily pipeline execution logs.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
@@ -8,7 +11,10 @@ from pydantic import BaseModel, ConfigDict
 
 
 class RunMetricsArtifacts(BaseModel):
-    """Represent artifact paths produced by the pipeline run."""
+    """Represent artifact paths produced by the pipeline run.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -17,7 +23,10 @@ class RunMetricsArtifacts(BaseModel):
 
 
 class RunMetrics(BaseModel):
-    """Represent the daily pipeline run metrics payload."""
+    """Represent the daily pipeline run metrics payload.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(frozen=True)
 

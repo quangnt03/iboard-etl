@@ -1,4 +1,7 @@
-"""Pydantic models for analytics and reporting."""
+"""Pydantic models for analytics and reporting.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
@@ -9,7 +12,10 @@ from pydantic import BaseModel, ConfigDict
 
 
 class VolatilityRow(BaseModel):
-    """Represents a volatility analytics row."""
+    """Represents a volatility analytics row.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -21,7 +27,10 @@ class VolatilityRow(BaseModel):
 
 
 class VolumeRow(BaseModel):
-    """Represents a volume analytics row."""
+    """Represents a volume analytics row.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -32,7 +41,10 @@ class VolumeRow(BaseModel):
 
 
 class VolumeCountRow(BaseModel):
-    """Represents daily volume row counts for a ticker."""
+    """Represents daily volume row counts for a ticker.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -41,7 +53,10 @@ class VolumeCountRow(BaseModel):
 
 
 class ReportRow(BaseModel):
-    """Represents a combined analytics row for reporting."""
+    """Represents a combined analytics row for reporting.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -56,7 +71,10 @@ class ReportRow(BaseModel):
 
 
 class ReportContext(BaseModel):
-    """Context payload passed into the report template."""
+    """Context payload passed into the report template.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -70,7 +88,10 @@ class ReportContext(BaseModel):
 
 
 class ReportResult(BaseModel):
-    """Result metadata for a generated report."""
+    """Result metadata for a generated report.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(from_attributes=True)
 

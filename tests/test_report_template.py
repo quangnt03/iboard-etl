@@ -1,11 +1,22 @@
+"""Unit tests for the HTML report template contents.
+
+Keyword arguments:
+None."""
+
 import unittest
 
 
 class TestReportTemplate(unittest.TestCase):
-    """Basic checks for the report template structure."""
+    """Basic checks for the report template structure.
+
+Keyword arguments:
+None."""
 
     def test_template_contains_required_columns(self) -> None:
-        """Ensure the report template includes the required column headers."""
+        """Ensure the report template includes the required column headers.
+
+Keyword arguments:
+self -- The self."""
         with open("src/templates/report.j2", "r", encoding="utf-8") as handle:
             content = handle.read()
 

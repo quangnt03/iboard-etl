@@ -1,3 +1,8 @@
+"""Unit tests for VnStock fallback behavior in analytics.
+
+Keyword arguments:
+None."""
+
 import unittest
 from datetime import datetime, timezone
 from unittest.mock import patch
@@ -9,7 +14,10 @@ from tools.vnstock_history import VnStockHistoryRow
 
 
 class StubAnalyticsRepository:
-    """Stub repository for analytics fallback tests."""
+    """Stub repository for analytics fallback tests.
+
+Keyword arguments:
+None."""
 
     def __init__(
         self,
@@ -17,33 +25,54 @@ class StubAnalyticsRepository:
         volume_rows: list[VolumeRow],
         count_rows: list[VolumeCountRow],
     ) -> None:
-        """Store stubbed query results."""
+        """Store stubbed query results.
+
+Keyword arguments:
+self -- The self.
+volatility_rows -- The volatility rows.
+volume_rows -- The volume rows.
+count_rows -- The count rows."""
 
         self._volatility_rows = volatility_rows
         self._volume_rows = volume_rows
         self._count_rows = count_rows
 
     def fetch_intraday_volatility(self) -> list[VolatilityRow]:
-        """Return stubbed volatility rows."""
+        """Return stubbed volatility rows.
+
+Keyword arguments:
+self -- The self."""
 
         return self._volatility_rows
 
     def fetch_volume_vs_5d_avg(self) -> list[VolumeRow]:
-        """Return stubbed volume rows."""
+        """Return stubbed volume rows.
+
+Keyword arguments:
+self -- The self."""
 
         return self._volume_rows
 
     def fetch_volume_5d_counts(self) -> list[VolumeCountRow]:
-        """Return stubbed volume count rows."""
+        """Return stubbed volume count rows.
+
+Keyword arguments:
+self -- The self."""
 
         return self._count_rows
 
 
 class TestAnalyticsFallback(unittest.TestCase):
-    """Validate VnStock fallback behavior in analytics service."""
+    """Validate VnStock fallback behavior in analytics service.
+
+Keyword arguments:
+None."""
 
     def test_fallback_used_when_insufficient_rows(self) -> None:
-        """Use VnStock history when SQLite has fewer than 5 daily rows."""
+        """Use VnStock history when SQLite has fewer than 5 daily rows.
+
+Keyword arguments:
+self -- The self."""
 
         repository = StubAnalyticsRepository(
             volatility_rows=[
@@ -79,7 +108,10 @@ class TestAnalyticsFallback(unittest.TestCase):
         self.assertAlmostEqual(report_rows[0].volume_ratio, 100.0 / 30.0)
 
     def test_fallback_skipped_when_sufficient_rows(self) -> None:
-        """Skip VnStock history when SQLite has 5 or more rows."""
+        """Skip VnStock history when SQLite has 5 or more rows.
+
+Keyword arguments:
+self -- The self."""
 
         repository = StubAnalyticsRepository(
             volatility_rows=[
@@ -107,7 +139,10 @@ class TestAnalyticsFallback(unittest.TestCase):
         self.assertAlmostEqual(report_rows[0].volume_ratio, 1.33)
 
     def test_fallback_empty_history_keeps_sql_values(self) -> None:
-        """Keep SQLite values when VnStock history is empty."""
+        """Keep SQLite values when VnStock history is empty.
+
+Keyword arguments:
+self -- The self."""
 
         repository = StubAnalyticsRepository(
             volatility_rows=[

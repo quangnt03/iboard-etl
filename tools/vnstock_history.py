@@ -1,8 +1,12 @@
-"""VnStock history wrapper for volume lookups."""
+"""VnStock history wrapper for volume lookups.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
 from datetime import datetime
+import logging
 import math
 import time
 from typing import Iterable
@@ -13,7 +17,10 @@ from vnstock import Quote, register_user
 
 
 class VnStockHistoryRow(BaseModel):
-    """Represent a single OHLCV history row from VnStock."""
+    """Represent a single OHLCV history row from VnStock.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -27,7 +34,10 @@ class VnStockHistoryRow(BaseModel):
 
 
 class VnStockHistoryResult(BaseModel):
-    """Represent normalized VnStock history output."""
+    """Represent normalized VnStock history output.
+
+Keyword arguments:
+None."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -39,26 +49,77 @@ _REGISTERED_API_KEY: str | None = None
 
 
 def _ensure_registered(api_key: str | None) -> None:
-    """Register vnstock API key once per process if provided."""
+    """Register vnstock API key once per process if provided.
+
+Keyword arguments:
+api_key -- The api key."""
 
     global _REGISTERED_API_KEY
     if not api_key:
         return
     if _REGISTERED_API_KEY == api_key:
         return
-    register_user(api_key=api_key)
+    try:
+        register_user(api_key=api_key)
+    except Exception as exc:  # noqa: BLE001 - external API error surface is inconsistent
+        logging.getLogger("finhay.vnstock").warning(
+            "vnstock_register_failed api_key_set=%s error=%s",
+            bool(api_key),
+            exc,
+        )
+        return
     _REGISTERED_API_KEY = api_key
+
+
+def _is_rate_limit_error(exc: Exception) -> bool:
+    """Detect whether an exception indicates rate limiting.
+
+Keyword arguments:
+exc -- The exception to inspect.
+"""
+
+    message = str(exc).lower()
+    return (
+        "ratelimit" in message
+        or "rate limit" in message
+        or "429" in message
+    )
+
+
+def _is_connection_error(exc: Exception) -> bool:
+    """Detect whether an exception indicates a connection failure.
+
+Keyword arguments:
+exc -- The exception to inspect.
+"""
+
+    message = str(exc).lower()
+    return any(
+        token in message
+        for token in (
+            "connection",
+            "connect",
+            "timed out",
+            "timeout",
+            "temporarily unavailable",
+            "temporary failure",
+            "name resolution error",
+            "name or service not known",
+            "gaierror",
+            "dns",
+            "connection reset",
+            "refused",
+            "failed to resolve",
+            "getaddrinfo failed",
+        )
+    )
 
 
 def _parse_rows(rows: Iterable[dict[str, object]]) -> list[VnStockHistoryRow]:
     """Convert raw row mappings into typed history rows.
 
-    Args:
-        rows: Iterable of raw row dictionaries with `time` and `volume`.
-
-    Returns:
-        List of typed history rows.
-    """
+Keyword arguments:
+rows -- Iterable of raw row dictionaries with `time` and `volume`."""
 
     parsed: list[VnStockHistoryRow] = []
     for row in rows:
@@ -81,14 +142,11 @@ def fetch_history(
 ) -> VnStockHistoryResult:
     """Fetch daily OHLCV history from VnStock for a symbol.
 
-    Args:
-        symbol: Stock symbol to query.
-        source: Data source name (e.g., "VCI" or "KBS").
-        length_days: Lookback length in days.
-
-    Returns:
-        Normalized history rows with time and volume.
-    """
+Keyword arguments:
+symbol -- Stock symbol to query.
+source -- Data source name (e.g., "VCI" or "KBS").
+length_days -- Lookback length in days.
+api_key -- (default None) (default None)"""
 
     _ensure_registered(api_key)
     quote = Quote(symbol=symbol, source=source)
@@ -106,16 +164,18 @@ def fetch_history(
                 rows = frame[available].to_dict(orient="records")
             return VnStockHistoryResult(symbol=symbol, source=source, rows=_parse_rows(rows))
         except Exception as exc:  # noqa: BLE001 - external API error surface is inconsistent
-            message = str(exc).lower()
-            is_rate_limit = ( 
-                "ratelimit" in message 
-                or "rate limit" in message 
-                or "Rate limit" in message 
-                or "429" in message
-            )
-            if not is_rate_limit or attempt == max_attempts:
-                raise
-            time.sleep(cooldown_seconds)
-            cooldown_seconds *= 2
+            if _is_rate_limit_error(exc) and attempt < max_attempts:
+                time.sleep(cooldown_seconds)
+                cooldown_seconds *= 2
+                continue
+            if _is_connection_error(exc):
+                logging.getLogger("finhay.vnstock").warning(
+                    "vnstock_connection_failed symbol=%s source=%s error=%s",
+                    symbol,
+                    source,
+                    exc,
+                )
+                return VnStockHistoryResult(symbol=symbol, source=source, rows=[])
+            raise
 
     return VnStockHistoryResult(symbol=symbol, source=source, rows=[])

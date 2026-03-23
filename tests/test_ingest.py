@@ -1,4 +1,7 @@
-"""Tests for the VN30 HTTP fetcher."""
+"""Tests for the VN30 HTTP fetcher.
+
+Keyword arguments:
+None."""
 
 from __future__ import annotations
 
@@ -11,34 +14,59 @@ from src.ingest import FetchError, VN30Fetcher
 
 
 class FakeHttpResponse:
-    """Simple context manager for urllib response mocking."""
+    """Simple context manager for urllib response mocking.
+
+Keyword arguments:
+None."""
 
     def __init__(self, payload: str) -> None:
-        """Store the response payload."""
+        """Store the response payload.
+
+Keyword arguments:
+self -- The self.
+payload -- The payload."""
 
         self.payload = payload
 
     def read(self) -> bytes:
-        """Return the payload bytes."""
+        """Return the payload bytes.
+
+Keyword arguments:
+self -- The self."""
 
         return self.payload.encode("utf-8")
 
     def __enter__(self) -> "FakeHttpResponse":
-        """Enter the context manager."""
+        """Enter the context manager.
+
+Keyword arguments:
+self -- The self."""
 
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
-        """Exit the context manager."""
+        """Exit the context manager.
+
+Keyword arguments:
+self -- The self.
+exc_type -- The exc type.
+exc -- The exc.
+tb -- The tb."""
 
         return None
 
 
 class VN30FetcherTests(unittest.TestCase):
-    """Cover fetcher success and retry behavior."""
+    """Cover fetcher success and retry behavior.
+
+Keyword arguments:
+None."""
 
     def setUp(self) -> None:
-        """Create a fetcher for each test."""
+        """Create a fetcher for each test.
+
+Keyword arguments:
+self -- The self."""
 
         self.fetcher = VN30Fetcher(
             api_url="https://example.test/vn30",
@@ -48,7 +76,10 @@ class VN30FetcherTests(unittest.TestCase):
         )
 
     def test_fetch_records_success(self) -> None:
-        """Return validated records on a good response."""
+        """Return validated records on a good response.
+
+Keyword arguments:
+self -- The self."""
 
         payload = {
             "code": "SUCCESS",
@@ -151,7 +182,10 @@ class VN30FetcherTests(unittest.TestCase):
         self.assertEqual(records[0].market_cap, 23600 * 243800)
 
     def test_fetch_records_retries_http_429_then_succeeds(self) -> None:
-        """Retry on 429 and succeed on a later attempt."""
+        """Retry on 429 and succeed on a later attempt.
+
+Keyword arguments:
+self -- The self."""
 
         payload = {
             "code": "SUCCESS",
@@ -189,14 +223,20 @@ class VN30FetcherTests(unittest.TestCase):
         self.assertEqual(len(records), 1)
 
     def test_fetch_records_raises_on_malformed_json(self) -> None:
-        """Fail fast on malformed JSON."""
+        """Fail fast on malformed JSON.
+
+Keyword arguments:
+self -- The self."""
 
         with patch("src.ingest.request.urlopen", return_value=FakeHttpResponse("{bad json")):
             with self.assertRaises(FetchError):
                 self.fetcher.fetch_records()
 
     def test_fetch_records_raises_on_empty_data(self) -> None:
-        """Reject empty data responses."""
+        """Reject empty data responses.
+
+Keyword arguments:
+self -- The self."""
 
         payload = {"code": "SUCCESS", "message": "ok", "data": []}
         with patch("src.ingest.request.urlopen", return_value=FakeHttpResponse(json.dumps(payload))):

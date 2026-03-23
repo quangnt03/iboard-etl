@@ -35,6 +35,7 @@ class PipelineResult:
 def _latest_quality_report_path(report_dir: Path) -> Path | None:
     """Return the latest quality report JSON path in the report directory."""
 
+    # Select the newest quality report by filename sort order.
     candidates = sorted(report_dir.glob("quality_report_check_*.json"))
     return candidates[-1] if candidates else None
 
@@ -42,6 +43,7 @@ def _latest_quality_report_path(report_dir: Path) -> Path | None:
 def _load_quality_summary(report_path: Path) -> dict[str, Any] | None:
     """Load summary fields from a quality report JSON file."""
 
+    # Parse only the summary and violation totals to decide fast-path eligibility.
     try:
         payload = json.loads(report_path.read_text(encoding="utf-8"))
         summary = payload.get("summary", {})
@@ -49,6 +51,7 @@ def _load_quality_summary(report_path: Path) -> dict[str, Any] | None:
         if not isinstance(checks, list):
             total_violations = -1
         else:
+            # Sum violations from each check entry when present.
             total_violations = sum(
                 int(check.get("violation_count", 0))
                 for check in checks
@@ -65,6 +68,7 @@ def _load_quality_summary(report_path: Path) -> dict[str, Any] | None:
 def _load_quality_report(report_path: Path) -> QualityReport | None:
     """Load a quality report from disk."""
 
+    # Deserialize the full report payload for detailed metrics.
     try:
         payload = json.loads(report_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -81,9 +85,11 @@ def _quality_failure_counts(
 ) -> tuple[int, dict[str, int], int]:
     """Compute validation counts from a quality report."""
 
+    # Default to zeros when no report is available.
     if report is None:
         return 0, {}, 0
 
+    # Aggregate per-rule violations and a total.
     failures = {check.rule_code: int(check.violation_count) for check in report.checks}
     failed_total = sum(failures.values())
     return int(report.run_metadata.records_checked), failures, failed_total
@@ -92,10 +98,12 @@ def _quality_failure_counts(
 def _rows_to_records(rows: list[VN30Row]) -> list[VN30Record]:
     """Map VN30Row objects to VN30Record for quality checks."""
 
+    # Normalize DB rows to schema objects expected by quality checks.
     records: list[VN30Record] = []
     for row in rows:
         timestamp = row.timestamp
         if timestamp.tzinfo is None:
+            # Ensure timestamps are timezone-aware for consistent comparisons.
             timestamp = timestamp.replace(tzinfo=timezone.utc)
         record = VN30Record(
             timestamp=timestamp,
@@ -118,15 +126,19 @@ def _rows_to_records(rows: list[VN30Row]) -> list[VN30Record]:
 def _latest_batch(records: list[VN30Record]) -> list[VN30Record]:
     """Select the latest batch of records using updated_at or timestamp."""
 
+    # Guard against empty input to avoid max() errors.
     if not records:
         return records
 
     def batch_key(record: VN30Record) -> datetime:
+        # Use updated_at when present, otherwise fall back to timestamp.
         value = record.updated_at or record.timestamp
         if value.tzinfo is None:
+            # Normalize to UTC for stable batch keys.
             value = value.replace(tzinfo=timezone.utc)
         return value.replace(microsecond=0)
 
+    # Filter to the most recent batch of rows by normalized timestamp.
     latest = max(batch_key(record) for record in records)
     return [record for record in records if batch_key(record) == latest]
 
@@ -134,6 +146,7 @@ def _latest_batch(records: list[VN30Record]) -> list[VN30Record]:
 def _build_service(config: AppConfig) -> VN30Service:
     """Build VN30Service for the provided config."""
 
+    # Wire repository, fetcher, and quality checker dependencies.
     connection_manager = SQLiteConnectionManager(
         database_path=config.database_path,
         schema_path=config.schema_path,
@@ -148,6 +161,7 @@ def _build_service(config: AppConfig) -> VN30Service:
 def _default_report_path(config: AppConfig) -> Path:
     """Return default analytics report output path."""
 
+    # Use a date-stamped HTML report name.
     date_stamp = datetime.now().strftime("%Y%m%d")
     return config.report_output_dir / f"report-{date_stamp}.html"
 
@@ -155,6 +169,7 @@ def _default_report_path(config: AppConfig) -> Path:
 def _run_metrics_path(log_dir: Path, timestamp: datetime) -> Path:
     """Return the daily run metrics log path."""
 
+    # Use a compact date stamp for daily metrics logs.
     date_stamp = timestamp.strftime("%d%m%y")
     return log_dir / f"run_pipeline_{date_stamp}.json"
 
@@ -162,6 +177,7 @@ def _run_metrics_path(log_dir: Path, timestamp: datetime) -> Path:
 def _write_run_metrics(metrics: RunMetrics, output_path: Path, logger: Any) -> None:
     """Write the run metrics JSON payload."""
 
+    # Persist run metrics so pipeline runs are auditable.
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(metrics.model_dump_json(indent=2), encoding="utf-8")
     logger.info("run_metrics_written path=%s status=%s", output_path, metrics.status)
@@ -170,6 +186,7 @@ def _write_run_metrics(metrics: RunMetrics, output_path: Path, logger: Any) -> N
 def run_pipeline(config: AppConfig | None = None) -> PipelineResult:
     """Run the pipeline with quality-gated behavior."""
 
+    # Initialize runtime state and counters for the metrics log.
     runtime_config = config or CONFIG
     logger = get_logger(runtime_config.log_path)
     started_at = datetime.now(tz=ICT)
@@ -194,12 +211,14 @@ def run_pipeline(config: AppConfig | None = None) -> PipelineResult:
 
     try:
         service = _build_service(runtime_config)
+        # Fast path: reuse DB rows when the latest quality report is clean.
         if has_clean_report:
             rows = service.repository.list_all()
             if rows:
                 records = _rows_to_records(rows)
                 records = _latest_batch(records)
                 checker = VN30QualityChecker(report_directory=report_dir)
+                # Re-run quality checks to ensure the cached DB rows are still valid.
                 report, quality_report_path = checker.validate_and_write(
                     records,
                     runtime_config.ssi_iboard_endpoint,
@@ -220,6 +239,7 @@ def run_pipeline(config: AppConfig | None = None) -> PipelineResult:
                     analytics_report_path=analytics_result.output_path,
                 )
 
+        # Slow path: fetch from SSI, then validate, persist, and report.
         fetch_result = service.populate_from_api()
         status = "success" if fetch_result.success else "failed"
         rows_fetched = fetch_result.loaded_count
@@ -227,11 +247,13 @@ def run_pipeline(config: AppConfig | None = None) -> PipelineResult:
         rows_skipped = max(rows_fetched - rows_inserted, 0)
         quality_report_path = fetch_result.quality_report_path
         if quality_report_path:
+            # Load the quality report to capture per-rule failure counts.
             report = _load_quality_report(quality_report_path)
             rows_validated, failures_by_rule, rows_failed_validation = (
                 _quality_failure_counts(report)
             )
         else:
+            # No report means no validation details are available.
             rows_validated = rows_fetched
         analytics_result = generate_report(_default_report_path(runtime_config))
         analytics_report_path = analytics_result.output_path
@@ -244,9 +266,11 @@ def run_pipeline(config: AppConfig | None = None) -> PipelineResult:
         )
     except Exception as exc:
         status = "failed"
+        # Log unexpected exceptions while preserving stack trace.
         logger.exception("pipeline_failed error=%s", exc)
         raise
     finally:
+        # Always persist run metrics, even when the pipeline fails.
         finished_at = datetime.now(tz=ICT)
         duration_seconds = round((finished_at - started_at).total_seconds(), 2)
         metrics = RunMetrics(

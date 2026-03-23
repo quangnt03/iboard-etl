@@ -1,1 +1,4 @@
-"""Service layer package."""
+"""Service layer package.
+
+Keyword arguments:
+None."""

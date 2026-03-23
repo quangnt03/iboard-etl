@@ -1,3 +1,8 @@
+"""Integration tests for analytics report generation.
+
+Keyword arguments:
+None."""
+
 import sqlite3
 import unittest
 from pathlib import Path
@@ -10,10 +15,16 @@ from src.service.analytics_service import AnalyticsService
 
 
 class TestReportGeneration(unittest.TestCase):
-    """Integration-style tests for report generation."""
+    """Integration-style tests for report generation.
+
+Keyword arguments:
+None."""
 
     def test_generate_report_writes_file(self) -> None:
-        """Ensure report generation writes HTML to disk."""
+        """Ensure report generation writes HTML to disk.
+
+Keyword arguments:
+self -- The self."""
         base_dir = Path("artifacts") / "tmp_report_test"
         output_dir = Path("output")
         db_path = base_dir / "stocks.db"
@@ -38,7 +49,10 @@ class TestReportGeneration(unittest.TestCase):
 
     @staticmethod
     def _seed_database(db_path: Path) -> None:
-        """Create a minimal database for analytics queries."""
+        """Create a minimal database for analytics queries.
+
+Keyword arguments:
+db_path -- The db path."""
         connection = sqlite3.connect(db_path)
         cursor = connection.cursor()
         cursor.execute(
