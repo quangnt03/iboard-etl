@@ -117,7 +117,7 @@ class VN30QualityCheckTests(unittest.TestCase):
         report, report_path = checker.validate_and_write([self.valid_record], "https://example.test/vn30")
 
         self.assertTrue(report_path.exists())
-        self.assertTrue(report_path.name.startswith("qac_"))
+        self.assertTrue(report_path.name.startswith("quality_report_check_"))
         payload = json.loads(report_path.read_text(encoding="utf-8"))
         self.assertEqual(payload["run_metadata"]["source"], "https://example.test/vn30")
         self.assertEqual(payload["run_metadata"]["records_checked"], 1)

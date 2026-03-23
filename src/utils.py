@@ -6,6 +6,9 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+from src.config import CONFIG
+from tools.vnstock_history import VnStockHistoryResult, fetch_history as fetch_vnstock_history
+
 
 def resolve_daily_log_path(log_path: Path) -> Path:
     """Resolve a daily log file path from a base log path.
@@ -49,3 +52,25 @@ def get_logger(log_path: Path, logger_name: str = "finhay.pipeline") -> logging.
     logger.addHandler(file_handler)
     logger.propagate = False
     return logger
+
+
+def fetch_volume_history(symbol: str, source: str, length_days: int) -> VnStockHistoryResult:
+    """Fetch VnStock daily volume history for a symbol.
+
+    This is a thin wrapper over the tools-layer implementation to keep API usage centralized.
+
+    Args:
+        symbol: Stock symbol to query.
+        source: Data source name (e.g., "VCI" or "KBS").
+        length_days: Lookback length in days.
+
+    Returns:
+        Normalized history rows with time and volume.
+    """
+
+    return fetch_vnstock_history(
+        symbol=symbol,
+        source=source,
+        length_days=length_days,
+        api_key=CONFIG.vnstock_api_key,
+    )

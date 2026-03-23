@@ -21,6 +21,9 @@ class AppConfig(BaseModel):
         max_retries: Maximum number of fetch attempts for transient failures.
         retry_cooldown_seconds: Delay between retry attempts.
         log_path: Application log file path.
+        vnstock_api_key: Optional API key for vnstock.
+        use_vnstock_fallback: Whether to use VnStock fallback for volume history.
+        persist_vnstock_fallback: Whether to persist VnStock fallback rows to SQLite.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -35,3 +38,6 @@ class AppConfig(BaseModel):
     max_retries: int
     retry_cooldown_seconds: float
     log_path: Path
+    vnstock_api_key: str | None = None
+    use_vnstock_fallback: bool = True
+    persist_vnstock_fallback: bool = False

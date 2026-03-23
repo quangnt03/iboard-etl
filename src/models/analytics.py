@@ -31,6 +31,15 @@ class VolumeRow(BaseModel):
     volume_ratio: float | None = None
 
 
+class VolumeCountRow(BaseModel):
+    """Represents daily volume row counts for a ticker."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    ticker: str
+    day_count: int
+
+
 class ReportRow(BaseModel):
     """Represents a combined analytics row for reporting."""
 

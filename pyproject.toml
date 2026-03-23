@@ -11,4 +11,5 @@ dependencies = [
     "pytest>=9.0.2",
     "python-dotenv>=1.2.2",
     "requests>=2.32.5",
+    "vnstock>=3.4.2",
 ]

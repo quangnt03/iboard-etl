@@ -83,7 +83,7 @@ class TestPipelineQualityGate(unittest.TestCase):
         connection.close()
 
     def _write_report(self, failed_rules: int, total_violations: int) -> Path:
-        path = self.logs_dir / "qac_2026-03-20.json"
+        path = self.logs_dir / "quality_report_check_2026-03-20.json"
         total_rules = 1
         passed_rules = total_rules - failed_rules
         overall_status = "pass" if failed_rules == 0 else "fail"

@@ -59,6 +59,9 @@ REPORT_OUTPUT_DIR=output
 REQUEST_TIMEOUT_SECONDS=30.0
 MAX_RETRIES=3
 RETRY_COOLDOWN_SECONDS=2.0
+VNSTOCK_API_KEY=vnstock_*************
+USE_VNSTOCK_FALLBACK=true
+PERSIST_VNSTOCK_FALLBACK=false
 ```
 
 Populate the database: Create a SQLite file under `data` directory (default: `data/stocks.db`)
@@ -93,6 +96,9 @@ REPORT_OUTPUT_DIR=output
 REQUEST_TIMEOUT_SECONDS=30.0
 MAX_RETRIES=3
 RETRY_COOLDOWN_SECONDS=2.0
+VNSTOCK_API_KEY=vnstock_*************
+USE_VNSTOCK_FALLBACK=true
+PERSIST_VNSTOCK_FALLBACK=false
 ```
 
 ### 2. Run the full pipeline
@@ -104,7 +110,7 @@ python main.py
 Select option `1` in the menu to run the full pipeline.
 After a successful run, the following files should be generated:
 
-- `output/qac_YYYY-MM-dd.json`
+- `output/quality_report_check_YYYY-MM-dd.json`
 
 ```json
 {
@@ -151,8 +157,42 @@ After a successful run, the following files should be generated:
 - `output/report-YYYYmmdd.html`
   ![sample_html_report](./docs/dashboard_example.png)
 - `logs/pipeline.log`
+- `logs/run_pipeline_ddmmyy.json` (daily pipeline metrics log)
+
+Example run metrics log:
+
+```json
+{
+  "run_id": "2026-03-21T23:33:38+07:00",
+  "source": "SSI iBoard API",
+  "dataset": "VN30",
+  "started_at": "2026-03-21T23:33:36+07:00",
+  "finished_at": "2026-03-21T23:33:38+07:00",
+  "duration_seconds": 2.14,
+  "status": "success",
+  "rows_fetched": 30,
+  "rows_validated": 30,
+  "rows_inserted": 30,
+  "rows_skipped": 0,
+  "rows_failed_validation": 0,
+  "quality_failures_by_rule": {
+    "no_null_prices": 0,
+    "price_change_within_bounds": 0,
+    "volume_positivity": 0
+  },
+  "artifacts": {
+    "quality_report": "output/data_quality_report.json",
+    "analytics_report": "output/report-20260321.html"
+  }
+}
+```
 
 To execute each features manually, please refer to [CLI Manuals](./docs/CLI_MANUALS.md)
+
+Report format (HTML):
+- Dark-themed table sorted by volatility (top 10).
+- Columns: Ticker, Open, High, Low, Volatility %, Today Volume, 5-Day Avg Volume, Volume Ratio.
+- Volume Ratio is calculated as `today_volume / avg_5d_volume`.
 
 ## Project Structure
 
@@ -209,6 +249,11 @@ Schema definitions, API payload notes, and data validation rules now live in
 
 Analytics logic, HTML report notes, and logging details now live in
 [Analytics and Logging](./docs/ANALYTICS_LOGGING.md).
+
+Note: If SQLite does not have 5 daily volume rows for a ticker, the analytics
+report can fall back to VnStock history (requires `VNSTOCK_API_KEY`). Control this
+with `USE_VNSTOCK_FALLBACK` (default `true`) and `PERSIST_VNSTOCK_FALLBACK`
+(default `false`).
 
 ---
 

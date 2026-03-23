@@ -1,6 +1,6 @@
 import unittest
 
-from src.report import build_parser, main
+from src.analytics import build_parser, main
 
 
 class TestReportCli(unittest.TestCase):

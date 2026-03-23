@@ -61,3 +61,24 @@ SELECT
 FROM windowed
 WHERE trade_date = (SELECT trade_date FROM latest_day)
 ORDER BY volume_ratio DESC;
+
+-- name: volume_5d_counts
+WITH latest_day AS (
+    SELECT DATE(MAX(timestamp)) AS trade_date
+    FROM vn30_stock
+),
+daily_volume AS (
+    SELECT
+        ticker,
+        DATE(timestamp) AS trade_date
+    FROM vn30_stock
+    WHERE volume IS NOT NULL
+    GROUP BY ticker, DATE(timestamp)
+)
+SELECT
+    ticker,
+    COUNT(*) AS day_count
+FROM daily_volume
+WHERE trade_date BETWEEN DATE((SELECT trade_date FROM latest_day), '-4 day')
+  AND (SELECT trade_date FROM latest_day)
+GROUP BY ticker;

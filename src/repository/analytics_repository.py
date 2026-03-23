@@ -6,7 +6,7 @@ import re
 import sqlite3
 from pathlib import Path
 
-from src.models.analytics import VolumeRow, VolatilityRow
+from src.models.analytics import VolumeCountRow, VolumeRow, VolatilityRow
 from src.repository.vn30_repository import SQLiteConnectionManager, create_connection_manager
 
 
@@ -39,6 +39,14 @@ class AnalyticsRepository:
         with self.connection_manager.connect() as connection:
             rows = connection.execute(query).fetchall()
         return [VolumeRow.model_validate(dict(row)) for row in rows]
+
+    def fetch_volume_5d_counts(self) -> list[VolumeCountRow]:
+        """Return per-ticker daily volume counts for the last 5 days."""
+
+        query = self._load_named_query("volume_5d_counts")
+        with self.connection_manager.connect() as connection:
+            rows = connection.execute(query).fetchall()
+        return [VolumeCountRow.model_validate(dict(row)) for row in rows]
 
     def _load_named_query(self, name: str) -> str:
         """Load a named SQL query from the analytics SQL file.

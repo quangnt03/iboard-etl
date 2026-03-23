@@ -27,7 +27,7 @@ This keeps SQL logic reviewable and separate from Python orchestration.
 - aggregations
 - window functions where useful
 
-### Example formulas
+### Formulas
 
 ```text
 intraday_volatility = (high_price - low_price) / nullif(open_price, 0)
@@ -42,12 +42,53 @@ The analytics result is rendered into:
 output/report-YYYYmmdd.html
 ```
 
+Report format:
+- Dark-themed table sorted by volatility (top 10).
+- Columns: Ticker, Open, High, Low, Volatility %, Today Volume, 5-Day Avg Volume, Volume Ratio.
+- Volume Ratio is computed as `today_volume / avg_5d_volume`.
+
 ## Logging
 
 Logging should be written to:
 
 ```text
 logs/pipeline.log
+```
+
+## Run Metrics Log
+
+Each full pipeline run writes a daily metrics log:
+
+```text
+logs/run_pipeline_ddmmyy.json
+```
+
+Format:
+
+```json
+{
+  "run_id": "2026-03-21T23:33:38+07:00",
+  "source": "SSI iBoard API",
+  "dataset": "VN30",
+  "started_at": "2026-03-21T23:33:36+07:00",
+  "finished_at": "2026-03-21T23:33:38+07:00",
+  "duration_seconds": 2.14,
+  "status": "success",
+  "rows_fetched": 30,
+  "rows_validated": 30,
+  "rows_inserted": 30,
+  "rows_skipped": 0,
+  "rows_failed_validation": 0,
+  "quality_failures_by_rule": {
+    "no_null_prices": 0,
+    "price_change_within_bounds": 0,
+    "volume_positivity": 0
+  },
+  "artifacts": {
+    "quality_report": "output/data_quality_report.json",
+    "analytics_report": "output/report-20260321.html"
+  }
+}
 ```
 
 The log should include:
@@ -81,3 +122,9 @@ Preferred behavior:
 - skip invalid records when appropriate,
 - fail loudly when the pipeline cannot continue,
 - and avoid silent corruption.
+
+Fallback behavior:
+- When SQL does not return 5 daily volume rows for a ticker, the analytics layer can
+  fetch VnStock history to compute the 5-day average volume.
+- Control this with `USE_VNSTOCK_FALLBACK` (default `true`).
+- To persist fallback rows into SQLite, set `PERSIST_VNSTOCK_FALLBACK` (default `false`).

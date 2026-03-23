@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS vn30_stock (
 
 ### `sql/indexes.sql`
 
-Contains: proper indexes
+Contains: proper indexes on `ticker` and `timestamp`, because the two fields are supposed to be queried to analyze time-series movements of VN30 Stocks.
 
 ```sql
 CREATE INDEX IF NOT EXISTS idx_vn30_stock_timestamp
@@ -125,6 +125,42 @@ The pipeline includes a dedicated data quality stage after loading.
 - `low_price <= open_price`
 - `low_price <= close_price`
 - stale timestamp detection
+
+### Add more quality rules
+
+1. Add a new `QualityRule` subclass in `src/models/quality_rules.py`.
+2. Define `rule_name`, `rule_code`, `description`, and `logic`, then implement `validate(...)` to return `QualityRuleResult`.
+3. Register the new rule in `VN30QualityChecker` by adding it to the default `rules` list in `src/quality_check.py`, or pass a custom list when constructing the checker.
+
+Example skeleton:
+
+```python
+class ExampleRule(QualityRule):
+    rule_name = "Example rule"
+    rule_code = "example_rule"
+    description = "Describe the rule in one sentence."
+    logic = "some_field >= 0"
+
+    def validate(self, records: list[VN30Record]) -> QualityRuleResult:
+        violations = [record for record in records if record.some_field is not None and record.some_field < 0]
+        return QualityRuleResult(
+            rule_name=self.rule_name,
+            rule_code=self.rule_code,
+            description=self.description,
+            logic=self.logic,
+            status="pass" if len(violations) == 0 else "fail",
+            violation_count=len(violations),
+            affected_tickers=_affected_tickers(violations),
+            sample_violations=_sample_violations(
+                violations,
+                lambda record: {
+                    "ticker": record.ticker,
+                    "timestamp": record.timestamp,
+                    "some_field": record.some_field,
+                },
+            ),
+        )
+```
 
 ### Output
 

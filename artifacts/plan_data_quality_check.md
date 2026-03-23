@@ -2,7 +2,7 @@
 
 ## Summary
 
-Add a post-retrieval quality validation stage that runs after successful fetch and writes a daily JSON report to `logs/qac_YYYY-mm-dd.json` without changing fetcher logic. Realign the JSON report schema to the new sample format (run metadata, summary, and per-rule checks).
+Add a post-retrieval quality validation stage that runs after successful fetch and writes a daily JSON report to `logs/quality_report_check_YYYY-mm-dd.json` without changing fetcher logic. Realign the JSON report schema to the new sample format (run metadata, summary, and per-rule checks).
 
 ## Key Changes
 
@@ -35,7 +35,7 @@ Add a post-retrieval quality validation stage that runs after successful fetch a
 
 ## Output
 
-- Daily quality report JSON in `logs/qac_YYYY-mm-dd.json`
+- Daily quality report JSON in `logs/quality_report_check_YYYY-mm-dd.json`
 - Includes:
   - run metadata (run id, source, dataset, generated at, timezone, records checked)
   - summary (total/passed/failed rules, overall status)

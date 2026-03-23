@@ -11,6 +11,16 @@ from src.models.app_config import AppConfig
 
 load_dotenv(find_dotenv(filename=".env.local"))
 
+
+def _parse_bool(value: str | None, default: bool) -> bool:
+    """Parse a truthy env var string into a boolean."""
+
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    return normalized in {"1", "true", "yes", "y", "on"}
+
+
 CONFIG = AppConfig(
     ssi_iboard_endpoint=os.getenv("BASE_URL", "https://iboard-query.ssi.com.vn/stock/group/VN30"),
     database_path=Path(os.getenv("DB_PATH", "data/stocks.db")),
@@ -22,4 +32,7 @@ CONFIG = AppConfig(
     max_retries=int(os.getenv("MAX_RETRIES", "3")),
     retry_cooldown_seconds=float(os.getenv("RETRY_COOLDOWN_SECONDS", "2.0")),
     log_path=Path(os.getenv("LOG_PATH", "logs/pipeline.log")),
+    vnstock_api_key=os.getenv("VNSTOCK_API_KEY"),
+    use_vnstock_fallback=_parse_bool(os.getenv("USE_VNSTOCK_FALLBACK"), True),
+    persist_vnstock_fallback=_parse_bool(os.getenv("PERSIST_VNSTOCK_FALLBACK"), False),
 )

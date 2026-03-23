@@ -35,5 +35,9 @@ def create_analytics_controller() -> AnalyticsController:
     """Build the default analytics controller graph."""
 
     repository = create_analytics_repository(CONFIG.analytics_sql_path)
-    service = AnalyticsService(repository)
+    service = AnalyticsService(
+        repository,
+        persist_vnstock_history=CONFIG.persist_vnstock_fallback,
+        use_vnstock_fallback=CONFIG.use_vnstock_fallback,
+    )
     return AnalyticsController(service)

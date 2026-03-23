@@ -98,7 +98,7 @@ class VN30QualityChecker:
         """Return the daily JSON report path."""
 
         report_date = datetime.now(tz=ICT).strftime("%Y-%m-%d")
-        return self.report_directory / f"qac_{report_date}.json"
+        return self.report_directory / f"quality_report_check_{report_date}.json"
 
     def write_report(self, report: QualityReport) -> Path:
         """Write the quality report to disk."""

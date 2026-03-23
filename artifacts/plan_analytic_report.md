@@ -18,10 +18,22 @@
   - Add volume ratio vs today volume.
   - Add/adjust analytics tests for correctness and columns.
   - Run tests and capture logs under `artifacts/logs/`.
+  - 5-day volume fallback:
+    - Trigger when a ticker has fewer than 5 daily rows in SQLite for the latest window.
+    - Fetch VnStock history with `Quote.history(interval="1D", length=10)` using source `VCI`.
+    - Compute 5-day average from the most recent 5 rows and override `avg_5d_volume` and `volume_ratio`.
+    - If VnStock returns no usable rows, keep SQLite-derived values.
+    - Do not persist fallback data into SQLite.
+    - Rate limit handling:
+      - VnStock limits are 60 requests/minute and 3000 requests/hour.
+      - On rate limit errors (HTTP 429 or `RateLimitExceed`), wait a cooldown period before retrying.
+      - Use exponential backoff starting at 15 seconds (per VnStock guidance) with a max of 3 attempts.
+      - If all retries fail, keep SQLite-derived values.
 
 - [x] Task 3: Build dark-themed HTML report template using Jinja + Tailwind.
   - Update `src/templates/report.j2` to include table + styling.
   - Ensure columns match: Ticker, Open, High, Low, Volatility %, Today Volume, 5-Day Avg Volume, Volume Ratio.
+  - Add a note in the report explaining `volume_ratio = today_volume / avg_5d_volume`.
   - Keep template data bindings stable and documented.
   - Add/adjust template tests if present.
   - Run tests and capture logs under `artifacts/logs/`.
